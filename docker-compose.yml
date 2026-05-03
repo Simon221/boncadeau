@@ -1,0 +1,58 @@
+services:
+
+  # ─── Base de données MySQL ──────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: boncadeau_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_secret
+      MYSQL_DATABASE: boncadeau
+      MYSQL_USER: boncadeau_user
+      MYSQL_PASSWORD: boncadeau_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./api/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "boncadeau_user", "-pboncadeau_pass"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── API Node.js ────────────────────────────────────────
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: boncadeau_api
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: boncadeau
+      DB_USER: boncadeau_user
+      DB_PASS: boncadeau_pass
+      PORT: 3001
+      CORS_ORIGIN: "*"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ─── Serveur Frontend (nginx) ───────────────────────────
+  frontend:
+    image: nginx:alpine
+    container_name: boncadeau_frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/usr/share/nginx/html:ro
+    depends_on:
+      - api
+
+volumes:
+  db_data:

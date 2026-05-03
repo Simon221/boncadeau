@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Détail du Bon – BonCadeau</title>
+  <link rel="stylesheet" href="../assets/css/styles.css" />
+  <link rel="stylesheet" href="../assets/css/detail.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+
+  <!-- ─── HEADER ─────────────────────────────────────────── -->
+  <header class="header">
+    <div class="header__inner">
+      <a class="logo" href="../index.html">
+        <span class="logo__icon"><i class="fas fa-gift"></i></span>
+        <span class="logo__text">Bon<span>Cadeau</span></span>
+      </a>
+      <nav class="nav">
+        <a href="../index.html#catalogue">Catalogue</a>
+        <a href="../index.html#comment">Comment ça marche</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+      <button class="btn btn--gold btn--sm" onclick="window.location.href='../index.html#catalogue'">
+        <i class="fas fa-arrow-left"></i> Retour au catalogue
+      </button>
+    </div>
+  </header>
+
+  <!-- ─── ÉTAT CHARGEMENT ───────────────────────────────── -->
+  <div class="detail-loader" id="detailLoader">
+    <div class="loader-spinner"></div>
+    <p>Chargement du bon cadeau…</p>
+  </div>
+
+  <!-- ─── ÉTAT ERREUR ───────────────────────────────────── -->
+  <div class="detail-error" id="detailError" style="display:none;">
+    <div class="container">
+      <i class="fas fa-exclamation-circle"></i>
+      <h2>Bon cadeau introuvable</h2>
+      <p>Ce bon cadeau n'existe pas ou a été retiré du catalogue.</p>
+      <a href="../index.html#catalogue" class="btn btn--gold btn--lg">
+        <i class="fas fa-arrow-left"></i> Retour au catalogue
+      </a>
+    </div>
+  </div>
+
+  <!-- ─── CONTENU PRINCIPAL ─────────────────────────────── -->
+  <main class="detail-main" id="detailMain" style="display:none;">
+
+    <!-- Breadcrumb -->
+    <div class="detail-breadcrumb container">
+      <a href="../index.html">Accueil</a>
+      <i class="fas fa-chevron-right"></i>
+      <a href="../index.html#catalogue">Catalogue</a>
+      <i class="fas fa-chevron-right"></i>
+      <span id="breadCat">–</span>
+      <i class="fas fa-chevron-right"></i>
+      <span id="breadTitle">–</span>
+    </div>
+
+    <div class="container detail-grid">
+
+      <!-- ── Colonne gauche : visuel ─────────────────────── -->
+      <div class="detail-visual">
+        <div class="detail-visual__card" id="visualCard">
+          <div class="detail-visual__icon" id="visualIcon">
+            <i class="fas fa-gift"></i>
+          </div>
+          <div class="detail-visual__badge" id="visualBadge" style="display:none;"></div>
+        </div>
+
+        <!-- Fournisseur -->
+        <div class="detail-provider" id="detailProvider">
+          <div class="detail-provider__logo" id="providerLogo">
+            <i class="fas fa-store"></i>
+          </div>
+          <div>
+            <p class="detail-provider__label">Proposé par</p>
+            <p class="detail-provider__name" id="providerName">–</p>
+          </div>
+        </div>
+
+        <!-- Garanties -->
+        <div class="detail-guarantees">
+          <div class="guarantee-item">
+            <i class="fas fa-shield-alt"></i>
+            <span>Paiement 100% sécurisé</span>
+          </div>
+          <div class="guarantee-item">
+            <i class="fas fa-envelope-open-text"></i>
+            <span>Livraison instantanée</span>
+          </div>
+          <div class="guarantee-item">
+            <i class="fas fa-calendar-check"></i>
+            <span>Valable 12 mois</span>
+          </div>
+          <div class="guarantee-item">
+            <i class="fas fa-undo-alt"></i>
+            <span>Remboursable sous 48h</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Colonne droite : infos ──────────────────────── -->
+      <div class="detail-info">
+        <p class="detail-cat" id="detailCat"><i class="fas fa-tag"></i> –</p>
+        <h1 class="detail-title" id="detailTitle">–</h1>
+        <div class="detail-rating">
+          <span class="stars">★★★★★</span>
+          <span class="rating-val" id="detailRating">–</span>
+          <span class="rating-count" id="detailReviews">(– avis)</span>
+        </div>
+        <p class="detail-price" id="detailPrice">–</p>
+
+        <div class="detail-divider"></div>
+
+        <!-- Description longue -->
+        <div class="detail-desc" id="detailDesc">
+          <p>–</p>
+        </div>
+
+        <!-- Inclus / Infos pratiques -->
+        <div class="detail-includes" id="detailIncludes">
+          <!-- injecté dynamiquement -->
+        </div>
+
+        <!-- Conditions d'utilisation -->
+        <div class="detail-conditions" id="detailConditions">
+          <!-- injecté dynamiquement -->
+        </div>
+
+        <!-- CTA -->
+        <div class="detail-cta">
+          <button class="btn btn--gold btn--full detail-btn-order" id="btnOrder">
+            <i class="fas fa-shopping-bag"></i> Commander ce bon
+          </button>
+          <button class="btn btn--outline-dark btn--full" onclick="window.location.href='../index.html#catalogue'">
+            <i class="fas fa-arrow-left"></i> Continuer mes achats
+          </button>
+        </div>
+      </div>
+
+    </div><!-- /detail-grid -->
+
+    <!-- ── Section avis ────────────────────────────────── -->
+    <section class="detail-reviews-section container" id="reviewsSection">
+      <h2 class="section-title" style="text-align:left;">Avis clients</h2>
+      <div class="reviews-grid" id="reviewsGrid">
+        <!-- injecté dynamiquement -->
+      </div>
+    </section>
+
+    <!-- ── Bons similaires ─────────────────────────────── -->
+    <section class="detail-similar container" id="similarSection">
+      <h2 class="section-title" style="text-align:left;">Vous aimerez aussi</h2>
+      <div class="similar-grid" id="similarGrid">
+        <!-- injecté dynamiquement -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ─── MODAL COMMANDE (réutilisée depuis index) ──────── -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeOrderIfOutside(event)">
+    <div class="modal" id="orderModal">
+      <button class="modal__close" onclick="closeOrder()"><i class="fas fa-times"></i></button>
+      <div class="modal__gift-summary" id="modalSummary">
+        <div class="modal__gift-icon" id="modalIcon"><i class="fas fa-gift"></i></div>
+        <div>
+          <p class="modal__gift-cat" id="modalCat">Catégorie</p>
+          <h3 class="modal__gift-title" id="modalTitle">Titre du bon</h3>
+          <p class="modal__gift-provider" id="modalProvider"></p>
+          <p class="modal__gift-price" id="modalPrice">Prix</p>
+        </div>
+      </div>
+
+      <form class="order-form" id="orderForm" onsubmit="submitOrder(event)" novalidate>
+        <h2 class="modal__heading">Finaliser votre commande</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="prenomAcheteur">Votre prénom *</label>
+            <input type="text" id="prenomAcheteur" placeholder="Mamadou" required />
+            <span class="form-error" id="err-prenomAcheteur"></span>
+          </div>
+          <div class="form-group">
+            <label for="nomAcheteur">Votre nom *</label>
+            <input type="text" id="nomAcheteur" placeholder="Diallo" required />
+            <span class="form-error" id="err-nomAcheteur"></span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="emailAcheteur">Email *</label>
+            <input type="email" id="emailAcheteur" placeholder="mamadou@email.com" required />
+            <span class="form-error" id="err-emailAcheteur"></span>
+          </div>
+          <div class="form-group">
+            <label for="telAcheteur">Téléphone *</label>
+            <input type="tel" id="telAcheteur" placeholder="+221 77 000 00 00" required />
+            <span class="form-error" id="err-telAcheteur"></span>
+          </div>
+        </div>
+        <hr class="form-divider" />
+        <p class="form-section-label"><i class="fas fa-heart"></i> Informations du destinataire (facultatif)</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="prenomDest">Prénom destinataire</label>
+            <input type="text" id="prenomDest" placeholder="Ex : Fatou" />
+          </div>
+          <div class="form-group">
+            <label for="nomDest">Nom destinataire</label>
+            <input type="text" id="nomDest" placeholder="Ex : Sow" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="emailDest">Email destinataire</label>
+          <input type="email" id="emailDest" placeholder="destinataire@email.com" />
+        </div>
+        <div class="form-group">
+          <label for="message">Message personnalisé</label>
+          <textarea id="message" rows="3" placeholder="Joyeux anniversaire…" maxlength="300"></textarea>
+          <span class="char-count" id="charCount">0 / 300</span>
+        </div>
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="cgv" required />
+            <span>J'accepte les <a href="#" class="gold-link">conditions générales de vente</a> *</span>
+          </label>
+          <span class="form-error" id="err-cgv"></span>
+        </div>
+        <button type="submit" class="btn btn--gold btn--full">
+          <i class="fas fa-lock"></i> Confirmer ma commande
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ─── MODAL SUCCÈS ──────────────────────────────────── -->
+  <div class="modal-overlay" id="successOverlay">
+    <div class="modal modal--success" id="successModal">
+      <div class="success-icon"><i class="fas fa-check-circle"></i></div>
+      <h2>Commande confirmée !</h2>
+      <p id="successMsg"></p>
+      <div class="success-details" id="successDetails"></div>
+      <button class="btn btn--gold btn--lg" onclick="closeSuccess()">
+        <i class="fas fa-home"></i> Retour à l'accueil
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── FOOTER ────────────────────────────────────────── -->
+  <footer class="footer">
+    <div class="container footer__inner">
+      <div class="logo logo--light">
+        <span class="logo__icon"><i class="fas fa-gift"></i></span>
+        <span class="logo__text">Bon<span>Cadeau</span></span>
+      </div>
+      <p class="footer__copy">© 2026 BonCadeau – Tous droits réservés</p>
+      <div class="footer__social">
+        <a href="#"><i class="fab fa-facebook-f"></i></a>
+        <a href="#"><i class="fab fa-instagram"></i></a>
+        <a href="#"><i class="fab fa-whatsapp"></i></a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../assets/js/order.js"></script>
+  <script src="../assets/js/detail.js"></script>
+</body>
+</html>
