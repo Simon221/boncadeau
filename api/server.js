@@ -209,7 +209,7 @@ app.post('/api/commandes', async (req, res) => {
       return res.status(400).json({ error: 'Champs obligatoires manquants.' });
     }
 
-    // Génération de la référence
+    // Générer la référence
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let ref = 'BC-';
     for (let i = 0; i < 8; i++) {
@@ -217,16 +217,155 @@ app.post('/api/commandes', async (req, res) => {
       if (i === 3) ref += '-';
     }
 
+    // Lier la commande au client si un JWT client est fourni
+    let client_id = null;
+    const authHdr = req.headers.authorization || '';
+    if (authHdr.startsWith('Bearer ')) {
+      try {
+        const decoded = jwt.verify(authHdr.slice(7), JWT_SECRET);
+        if (decoded.role === 'client') client_id = decoded.id;
+      } catch {}
+    }
+
     const [result] = await pool.query(
       `INSERT INTO commandes
-         (reference, bon_id, prenom_acheteur, nom_acheteur, email_acheteur, tel_acheteur,
+         (reference, bon_id, client_id, prenom_acheteur, nom_acheteur, email_acheteur, tel_acheteur,
           prenom_dest, nom_dest, email_dest, message)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [ref, bon_id, prenom_acheteur, nom_acheteur, email_acheteur, tel_acheteur,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [ref, bon_id, client_id, prenom_acheteur, nom_acheteur, email_acheteur, tel_acheteur,
        prenom_dest || null, nom_dest || null, email_dest || null, message || null]
     );
 
     res.status(201).json({ reference: ref, commande_id: result.insertId });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ════════════════════════════════════════════════════════════
+   CLIENTS – Inscription / Connexion / Espace perso
+   ════════════════════════════════════════════════════════════ */
+
+function requireClient(req, res, next) {
+  const auth = req.headers.authorization || '';
+  if (!auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Non authentifié.' });
+  try {
+    const decoded = jwt.verify(auth.slice(7), JWT_SECRET);
+    if (decoded.role !== 'client') return res.status(403).json({ error: 'Accès réservé aux clients.' });
+    req.client = decoded;
+    next();
+  } catch {
+    return res.status(401).json({ error: 'Token invalide ou expiré.' });
+  }
+}
+
+/* POST /api/clients/register */
+app.post('/api/clients/register', async (req, res) => {
+  try {
+    const { prenom, nom, email, telephone, password } = req.body;
+    if (!prenom || !nom || !email || !password) {
+      return res.status(400).json({ error: 'Champs obligatoires manquants.' });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 8 caractères.' });
+    }
+    const [[existing]] = await pool.query('SELECT id FROM clients WHERE email = ?', [email]);
+    if (existing) return res.status(409).json({ error: 'Un compte avec cet email existe déjà.' });
+
+    const password_hash = await bcrypt.hash(password, 12);
+    const [result] = await pool.query(
+      'INSERT INTO clients (prenom, nom, email, telephone, password_hash) VALUES (?, ?, ?, ?, ?)',
+      [prenom, nom, email, telephone || null, password_hash]
+    );
+    const token = jwt.sign(
+      { id: result.insertId, email, prenom, nom, role: 'client' },
+      JWT_SECRET, { expiresIn: JWT_EXPIRES }
+    );
+    res.status(201).json({ token, prenom, nom, email });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* POST /api/clients/login */
+app.post('/api/clients/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis.' });
+    const [[client]] = await pool.query('SELECT * FROM clients WHERE email = ?', [email]);
+    if (!client || !(await bcrypt.compare(password, client.password_hash))) {
+      return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
+    }
+    const token = jwt.sign(
+      { id: client.id, email: client.email, prenom: client.prenom, nom: client.nom, role: 'client' },
+      JWT_SECRET, { expiresIn: JWT_EXPIRES }
+    );
+    res.json({ token, prenom: client.prenom, nom: client.nom, email: client.email });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* GET /api/clients/me */
+app.get('/api/clients/me', requireClient, (req, res) => {
+  res.json({ prenom: req.client.prenom, nom: req.client.nom, email: req.client.email });
+});
+
+/* GET /api/clients/commandes */
+app.get('/api/clients/commandes', requireClient, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT c.id, c.reference, c.statut, c.created_at,
+              c.prenom_dest, c.nom_dest, c.message,
+              b.titre AS bon_titre, b.prix, b.devise, b.icone, b.couleur_fond, b.slug AS bon_slug,
+              f.nom AS fournisseur,
+              (SELECT COUNT(*) FROM avis a WHERE a.commande_id = c.id) AS a_avis
+       FROM commandes c
+       JOIN bons b ON b.id = c.bon_id
+       JOIN fournisseurs f ON f.id = b.fournisseur_id
+       WHERE c.client_id = ?
+       ORDER BY c.created_at DESC`,
+      [req.client.id]
+    );
+    res.json({ data: rows, total: rows.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* POST /api/clients/avis */
+app.post('/api/clients/avis', requireClient, async (req, res) => {
+  try {
+    const { commande_id, note, commentaire } = req.body;
+    if (!commande_id || !note || note < 1 || note > 5) {
+      return res.status(400).json({ error: 'note (1–5) et commande_id sont requis.' });
+    }
+    const [[commande]] = await pool.query(
+      'SELECT * FROM commandes WHERE id = ? AND client_id = ?',
+      [commande_id, req.client.id]
+    );
+    if (!commande) return res.status(404).json({ error: 'Commande introuvable.' });
+    if (commande.statut !== 'livre') {
+      return res.status(400).json({ error: 'Vous ne pouvez noter qu\'une commande livrée.' });
+    }
+    const [[existingAvis]] = await pool.query('SELECT id FROM avis WHERE commande_id = ?', [commande_id]);
+    if (existingAvis) return res.status(409).json({ error: 'Vous avez déjà noté cette commande.' });
+
+    await pool.query(
+      `INSERT INTO avis (bon_id, commande_id, client_id, auteur, note, commentaire, date_avis)
+       VALUES (?, ?, ?, ?, ?, ?, CURDATE())`,
+      [commande.bon_id, commande_id, req.client.id,
+       `${req.client.prenom} ${req.client.nom}`, note, commentaire || null]
+    );
+    // Mettre à jour note_moyenne et nb_avis du bon
+    await pool.query(
+      `UPDATE bons SET
+         nb_avis      = (SELECT COUNT(*) FROM avis WHERE bon_id = ?),
+         note_moyenne = (SELECT AVG(note)  FROM avis WHERE bon_id = ?)
+       WHERE id = ?`,
+      [commande.bon_id, commande.bon_id, commande.bon_id]
+    );
+    res.status(201).json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -315,7 +454,7 @@ app.get('/api/admin/commandes', requireAdmin, async (req, res) => {
 
     let where  = '';
     const params = [];
-    if (statut && ['en_attente','confirmee','annulee'].includes(statut)) {
+    if (statut && ['en_attente','confirmee','livre','annulee'].includes(statut)) {
       where = 'WHERE c.statut = ?';
       params.push(statut);
     }
@@ -344,7 +483,7 @@ app.get('/api/admin/commandes', requireAdmin, async (req, res) => {
 app.patch('/api/admin/commandes/:id/statut', requireAdmin, async (req, res) => {
   try {
     const { statut } = req.body;
-    if (!['en_attente','confirmee','annulee'].includes(statut)) {
+    if (!['en_attente','confirmee','livre','annulee'].includes(statut)) {
       return res.status(400).json({ error: 'Statut invalide.' });
     }
     await pool.query('UPDATE commandes SET statut = ? WHERE id = ?', [statut, req.params.id]);

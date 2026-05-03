@@ -22,9 +22,14 @@
         <a href="#comment">Comment ça marche</a>
         <a href="#contact">Contact</a>
       </nav>
-      <button class="btn btn--gold btn--sm" onclick="scrollToCatalogue()">
-        <i class="fas fa-star"></i> Offrir maintenant
-      </button>
+      <div class="header__actions">
+        <a href="pages/client-login.html" class="btn btn--outline btn--sm" id="btnMonEspace">
+          <i class="fas fa-user"></i> <span id="navClientLabel">Mon espace</span>
+        </a>
+        <button class="btn btn--gold btn--sm" onclick="scrollToCatalogue()">
+          <i class="fas fa-star"></i> Offrir maintenant
+        </button>
+      </div>
     </div>
   </header>
 
@@ -585,5 +590,19 @@
   </div>
 
   <script src="assets/js/script.js"></script>
+  <script src="assets/js/order.js"></script>
+  <script>
+    // Adapter le bouton "Mon espace" si le client est connecté
+    (function() {
+      const prenom = localStorage.getItem('client_prenom');
+      const btn    = document.getElementById('btnMonEspace');
+      const label  = document.getElementById('navClientLabel');
+      if (prenom && btn && label) {
+        label.textContent = prenom;
+        btn.href = 'pages/client-dashboard.html';
+        btn.querySelector('i').className = 'fas fa-user-circle';
+      }
+    })();
+  </script>
 </body>
 </html>

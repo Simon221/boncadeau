@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BonCadeau — Mes commandes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../assets/css/client.css" />
+</head>
+<body class="dashboard-body">
+
+  <!-- ─── TOPBAR ──────────────────────────────────────────── -->
+  <header class="client-topbar">
+    <a href="../index.html" class="topbar-brand">Bon<span>Cadeau</span></a>
+    <div class="topbar-user">
+      <div class="user-avatar" id="userAvatar">?</div>
+      <span id="userName" class="topbar-name"></span>
+      <button class="btn-logout" id="btnLogout" title="Déconnexion">
+        <i class="fas fa-sign-out-alt"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ─── HERO ─────────────────────────────────────────────── -->
+  <section class="client-hero">
+    <div class="hero-content">
+      <h1>Bonjour, <span id="heroPrenom"></span> 👋</h1>
+      <p>Suivez vos bons cadeaux et partagez vos expériences</p>
+    </div>
+    <div class="hero-stat">
+      <span id="statCount">–</span>
+      <small>commande(s)</small>
+    </div>
+  </section>
+
+  <!-- ─── MAIN ──────────────────────────────────────────────── -->
+  <main class="client-main">
+    <div class="section-header">
+      <h2><i class="fas fa-gift"></i> Mes commandes</h2>
+      <a href="../index.html" class="btn-discover">
+        <i class="fas fa-plus"></i> Découvrir d'autres bons
+      </a>
+    </div>
+
+    <div id="ordersGrid" class="orders-grid">
+      <div class="orders-loading">
+        <i class="fas fa-spinner fa-spin"></i> Chargement…
+      </div>
+    </div>
+  </main>
+
+  <!-- ─── MODAL AVIS ────────────────────────────────────────── -->
+  <div class="modal-overlay" id="avisOverlay" onclick="if(event.target===this)closeAvis()">
+    <div class="modal-avis">
+      <button class="modal-close" onclick="closeAvis()"><i class="fas fa-times"></i></button>
+      <h3><i class="fas fa-star" style="color:var(--gold)"></i> Écrire un avis</h3>
+      <p id="avisBonTitle" class="avis-subtitle"></p>
+
+      <form id="avisForm">
+        <input type="hidden" id="avisCommandeId" />
+
+        <div class="star-rating" id="starRating">
+          <span data-val="1">★</span>
+          <span data-val="2">★</span>
+          <span data-val="3">★</span>
+          <span data-val="4">★</span>
+          <span data-val="5">★</span>
+        </div>
+        <p id="starLabel" class="star-label">Cliquez pour noter</p>
+
+        <div class="form-group">
+          <label for="avisCommentaire">Votre commentaire (optionnel)</label>
+          <textarea id="avisCommentaire" rows="4" placeholder="Décrivez votre expérience…" maxlength="500"></textarea>
+        </div>
+
+        <div id="avisError" class="form-alert" style="display:none"></div>
+
+        <button type="submit" class="btn-auth" id="btnAvisSubmit">
+          <i class="fas fa-paper-plane"></i> Publier mon avis
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="../assets/js/client.js"></script>
+</body>
+</html>

@@ -68,15 +68,30 @@ CREATE TABLE bon_conditions (
   FOREIGN KEY (bon_id) REFERENCES bons(id) ON DELETE CASCADE
 );
 
+-- ─── Clients (espace personnel) ──────────────────────────
+CREATE TABLE clients (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  prenom        VARCHAR(100) NOT NULL,
+  nom           VARCHAR(100) NOT NULL,
+  email         VARCHAR(150) NOT NULL UNIQUE,
+  telephone     VARCHAR(30),
+  password_hash VARCHAR(255) NOT NULL,
+  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ─── Avis clients ─────────────────────────────────────────
 CREATE TABLE avis (
-  id         INT AUTO_INCREMENT PRIMARY KEY,
-  bon_id     INT NOT NULL,
-  auteur     VARCHAR(100) NOT NULL,
-  note       TINYINT NOT NULL CHECK (note BETWEEN 1 AND 5),
-  commentaire TEXT,
-  date_avis  DATE NOT NULL,
-  FOREIGN KEY (bon_id) REFERENCES bons(id) ON DELETE CASCADE
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  bon_id       INT NOT NULL,
+  commande_id  INT,
+  client_id    INT,
+  auteur       VARCHAR(100) NOT NULL,
+  note         TINYINT NOT NULL CHECK (note BETWEEN 1 AND 5),
+  commentaire  TEXT,
+  date_avis    DATE NOT NULL,
+  FOREIGN KEY (bon_id)      REFERENCES bons(id) ON DELETE CASCADE,
+  FOREIGN KEY (commande_id) REFERENCES commandes(id) ON DELETE SET NULL,
+  FOREIGN KEY (client_id)   REFERENCES clients(id) ON DELETE SET NULL
 );
 
 -- ─── Commandes ────────────────────────────────────────────
@@ -84,6 +99,7 @@ CREATE TABLE commandes (
   id               INT AUTO_INCREMENT PRIMARY KEY,
   reference        VARCHAR(20)  NOT NULL UNIQUE,
   bon_id           INT NOT NULL,
+  client_id        INT,
   prenom_acheteur  VARCHAR(100) NOT NULL,
   nom_acheteur     VARCHAR(100) NOT NULL,
   email_acheteur   VARCHAR(150) NOT NULL,
@@ -92,9 +108,10 @@ CREATE TABLE commandes (
   nom_dest         VARCHAR(100),
   email_dest       VARCHAR(150),
   message          TEXT,
-  statut           ENUM('en_attente','confirmee','annulee') DEFAULT 'confirmee',
+  statut           ENUM('en_attente','confirmee','livre','annulee') DEFAULT 'en_attente',
   created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (bon_id) REFERENCES bons(id)
+  FOREIGN KEY (bon_id)   REFERENCES bons(id),
+  FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL
 );
 
 -- ─── Administrateurs ─────────────────────────────────────

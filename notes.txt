@@ -1,0 +1,2 @@
+Login : http://localhost:8080/pages/admin-login.html
+admin@boncadeau.sn|Admin2026!

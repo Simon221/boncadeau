@@ -89,7 +89,7 @@ function fmtNum(n) {
   return Number(n).toLocaleString('fr-FR');
 }
 function statutBadge(s) {
-  const labels = { confirmee:'Confirmée', en_attente:'En attente', annulee:'Annulée' };
+  const labels = { en_attente:'En attente', confirmee:'Confirmée', livre:'Livré', annulee:'Annulée' };
   return `<span class="statut statut--${s}">${labels[s] || s}</span>`;
 }
 
@@ -174,6 +174,7 @@ async function loadCommandes() {
           <select class="statut-select" onchange="updateStatut(${c.id}, this.value)">
             <option value="en_attente" ${c.statut==='en_attente'?'selected':''}>En attente</option>
             <option value="confirmee"  ${c.statut==='confirmee' ?'selected':''}>Confirmée</option>
+            <option value="livre"      ${c.statut==='livre'     ?'selected':''}>Livré</option>
             <option value="annulee"    ${c.statut==='annulee'   ?'selected':''}>Annulée</option>
           </select>
         </td>

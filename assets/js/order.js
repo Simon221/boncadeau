@@ -206,9 +206,14 @@ async function submitOrder(event) {
   };
 
   try {
+    // Inclure le JWT client si l'utilisateur est connecté
+    const clientToken = localStorage.getItem('client_token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (clientToken) headers['Authorization'] = 'Bearer ' + clientToken;
+
     const res = await fetch('http://localhost:3001/api/commandes', {
       method : 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body   : JSON.stringify(payload)
     });
 

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BonCadeau — Mon Espace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../assets/css/client.css" />
+</head>
+<body class="auth-body">
+
+  <div class="auth-bg"></div>
+
+  <div class="auth-card">
+    <div class="auth-logo">
+      <a href="../index.html" class="brand">Bon<span>Cadeau</span></a>
+      <p>Votre espace personnel</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="login">Se connecter</button>
+      <button class="auth-tab"        data-tab="register">Créer un compte</button>
+    </div>
+
+    <!-- ─── Formulaire Connexion ──────────────────── -->
+    <form id="loginForm" class="auth-form">
+      <div id="loginError" class="form-alert" style="display:none"></div>
+
+      <div class="form-group">
+        <label for="loginEmail">Email</label>
+        <div class="input-icon-wrap">
+          <i class="fas fa-envelope"></i>
+          <input type="email" id="loginEmail" placeholder="mamadou@email.com" required />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="loginPassword">Mot de passe</label>
+        <div class="input-icon-wrap">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="loginPassword" placeholder="••••••••" required />
+          <button type="button" class="toggle-pwd" onclick="togglePwd('loginPassword',this)">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-auth">
+        <i class="fas fa-sign-in-alt"></i> Se connecter
+      </button>
+    </form>
+
+    <!-- ─── Formulaire Inscription ────────────────── -->
+    <form id="registerForm" class="auth-form" style="display:none">
+      <div id="registerError" class="form-alert" style="display:none"></div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="regPrenom">Prénom *</label>
+          <input type="text" id="regPrenom" placeholder="Mamadou" required />
+        </div>
+        <div class="form-group">
+          <label for="regNom">Nom *</label>
+          <input type="text" id="regNom" placeholder="Diallo" required />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="regEmail">Email *</label>
+        <div class="input-icon-wrap">
+          <i class="fas fa-envelope"></i>
+          <input type="email" id="regEmail" placeholder="mamadou@email.com" required />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="regTel">Téléphone</label>
+        <div class="input-icon-wrap">
+          <i class="fas fa-phone"></i>
+          <input type="tel" id="regTel" placeholder="+221 77 000 00 00" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="regPassword">Mot de passe * <small style="font-weight:400;text-transform:none">(min. 8 caractères)</small></label>
+        <div class="input-icon-wrap">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="regPassword" placeholder="••••••••" required minlength="8" />
+          <button type="button" class="toggle-pwd" onclick="togglePwd('regPassword',this)">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-auth">
+        <i class="fas fa-user-plus"></i> Créer mon compte
+      </button>
+    </form>
+
+    <p class="auth-back">
+      <a href="../index.html"><i class="fas fa-arrow-left"></i> Retour au site</a>
+    </p>
+  </div>
+
+  <script>
+  'use strict';
+
+  const API = 'http://localhost:3001';
+
+  // Déjà connecté → redirection
+  if (localStorage.getItem('client_token')) {
+    window.location.href = 'client-dashboard.html';
+  }
+
+  /* Tabs */
+  document.querySelectorAll('.auth-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('.auth-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('loginForm').style.display    = tab === 'login'    ? '' : 'none';
+      document.getElementById('registerForm').style.display = tab === 'register' ? '' : 'none';
+    });
+  });
+
+  function showError(id, msg) {
+    const el = document.getElementById(id);
+    el.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + msg;
+    el.style.display = 'block';
+  }
+
+  function togglePwd(id, btn) {
+    const inp = document.getElementById(id);
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    btn.querySelector('i').className = inp.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+  }
+
+  function setBusy(btn, busy, label) {
+    btn.disabled = busy;
+    btn.innerHTML = busy
+      ? '<i class="fas fa-spinner fa-spin"></i> Traitement…'
+      : label;
+  }
+
+  /* Connexion */
+  document.getElementById('loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    document.getElementById('loginError').style.display = 'none';
+    const btn = e.currentTarget.querySelector('[type=submit]');
+    const orig = btn.innerHTML;
+    setBusy(btn, true);
+    try {
+      const res  = await fetch(API + '/api/clients/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email:    document.getElementById('loginEmail').value.trim(),
+          password: document.getElementById('loginPassword').value,
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur de connexion.');
+      localStorage.setItem('client_token',  data.token);
+      localStorage.setItem('client_prenom', data.prenom);
+      localStorage.setItem('client_nom',    data.nom);
+      window.location.href = 'client-dashboard.html';
+    } catch (err) {
+      showError('loginError', err.message);
+      setBusy(btn, false, orig);
+    }
+  });
+
+  /* Inscription */
+  document.getElementById('registerForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    document.getElementById('registerError').style.display = 'none';
+    const btn  = e.currentTarget.querySelector('[type=submit]');
+    const orig = btn.innerHTML;
+    setBusy(btn, true);
+    try {
+      const res  = await fetch(API + '/api/clients/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prenom:    document.getElementById('regPrenom').value.trim(),
+          nom:       document.getElementById('regNom').value.trim(),
+          email:     document.getElementById('regEmail').value.trim(),
+          telephone: document.getElementById('regTel').value.trim() || null,
+          password:  document.getElementById('regPassword').value,
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur lors de la création du compte.');
+      localStorage.setItem('client_token',  data.token);
+      localStorage.setItem('client_prenom', data.prenom);
+      localStorage.setItem('client_nom',    data.nom);
+      window.location.href = 'client-dashboard.html';
+    } catch (err) {
+      showError('registerError', err.message);
+      setBusy(btn, false, orig);
+    }
+  });
+  </script>
+
+</body>
+</html>
