@@ -134,6 +134,7 @@ function renderBon(bon) {
     btnOrder.dataset.cat      = bon.categorie_nom;
     btnOrder.dataset.icon     = bon.icone || 'fa-gift';
     btnOrder.dataset.provider = bon.fournisseur_nom;
+    btnOrder.dataset.slug     = bon.slug;
     btnOrder.addEventListener('click', () => openOrder(btnOrder));
   }
 }

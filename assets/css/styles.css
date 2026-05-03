@@ -4,22 +4,22 @@
 
 /* ─── Variables ──────────────────────────────────────────── */
 :root {
-  --gold:        #C9A84C;
-  --gold-light:  #E2C474;
-  --gold-dark:   #9A7A30;
-  --gold-shine:  #FFE082;
+  --gold:        #BF9A5E;
+  --gold-light:  #D4B07C;
+  --gold-dark:   #8C6B35;
+  --gold-shine:  #EAD090;
   --white:       #FFFFFF;
-  --off-white:   #FDFAF4;
-  --bg-section:  #FBF7EE;
-  --text-dark:   #1A1A1A;
-  --text-mid:    #555555;
-  --text-light:  #888888;
-  --border:      #EDE0C4;
-  --shadow:      rgba(201,168,76,0.15);
-  --shadow-lg:   rgba(0,0,0,0.12);
+  --off-white:   #FDFAF5;
+  --bg-section:  #F8F5EF;
+  --text-dark:   #1C1A16;
+  --text-mid:    #4A4540;
+  --text-light:  #8A8278;
+  --border:      #E2D4B8;
+  --shadow:      rgba(191,154,94,0.10);
+  --shadow-lg:   rgba(0,0,0,0.08);
   --radius:      14px;
   --radius-lg:   22px;
-  --transition:  0.28s cubic-bezier(0.4,0,0.2,1);
+  --transition:  0.3s cubic-bezier(0.4,0,0.2,1);
   --font-serif:  'Playfair Display', Georgia, serif;
   --font-sans:   'Lato', 'Helvetica Neue', sans-serif;
 }
@@ -47,6 +47,54 @@ img { max-width: 100%; display: block; }
 
 /* ─── Container ──────────────────────────────────────────── */
 .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+/* ─── Keyframes ─────────────────────────────────────────── */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-18px); }
+}
+@keyframes floatAlt {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  33%       { transform: translateY(-10px) rotate(1deg); }
+  66%       { transform: translateY(-5px) rotate(-1deg); }
+}
+@keyframes pulseOrb {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%       { opacity: 0.65; transform: scale(1.12); }
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes lineGrow {
+  from { width: 0; }
+  to   { width: 64px; }
+}
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+
+/* ─── Scroll Reveal ──────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.4,0,0.2,1),
+              transform 0.7s cubic-bezier(0.4,0,0.2,1);
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.delay-1 { transition-delay: 0.1s; }
+.delay-2 { transition-delay: 0.2s; }
+.delay-3 { transition-delay: 0.3s; }
+.delay-4 { transition-delay: 0.4s; }
+.delay-5 { transition-delay: 0.5s; }
 
 /* ─── Boutons ────────────────────────────────────────────── */
 .btn {
@@ -102,11 +150,15 @@ img { max-width: 100%; display: block; }
 .section-title::after {
   content: '';
   display: block;
-  width: 64px;
+  width: 0;
   height: 3px;
   background: linear-gradient(90deg, var(--gold), var(--gold-shine));
   margin: 14px auto 0;
   border-radius: 4px;
+  transition: width 0.8s cubic-bezier(0.4,0,0.2,1) 0.35s;
+}
+.section-title.visible::after {
+  width: 64px;
 }
 .section-sub {
   text-align: center;
@@ -204,13 +256,14 @@ img { max-width: 100%; display: block; }
   justify-content: center;
   position: relative;
   overflow: hidden;
-  /* Fond dégradé or & blanc style luxe */
-  background:
-    linear-gradient(160deg,
-      #1a1409 0%,
-      #2e2006 30%,
-      #3d2d0a 60%,
-      #1a1409 100%);
+  background: linear-gradient(145deg,
+    #111009 0%,
+    #1C1608 25%,
+    #231A08 50%,
+    #1C1608 75%,
+    #111009 100%);
+  background-size: 200% 200%;
+  animation: gradientShift 18s ease-in-out infinite;
   padding: 120px 24px 100px;
   text-align: center;
 }
@@ -317,10 +370,46 @@ img { max-width: 100%; display: block; }
 }
 .badge i { color: var(--gold-light); font-size: 1rem; }
 .badge:hover {
-  background: rgba(201,168,76,0.12);
+  background: rgba(191,154,94,0.14);
   border-color: var(--gold);
   color: var(--white);
 }
+
+/* ─── Hero Orbes flottantes ──────────────────────────────── */
+.hero__orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 1;
+}
+.hero__orb--1 {
+  width: 540px; height: 540px;
+  background: radial-gradient(circle, rgba(191,154,94,0.2) 0%, transparent 70%);
+  top: -180px; left: -140px;
+  animation: pulseOrb 9s ease-in-out infinite;
+}
+.hero__orb--2 {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(212,176,124,0.16) 0%, transparent 70%);
+  bottom: -100px; right: -80px;
+  animation: pulseOrb 11s ease-in-out infinite reverse;
+  animation-delay: -4s;
+}
+.hero__orb--3 {
+  width: 260px; height: 260px;
+  background: radial-gradient(circle, rgba(234,208,144,0.1) 0%, transparent 70%);
+  top: 42%; left: 58%;
+  animation: float 13s ease-in-out infinite;
+  animation-delay: -7s;
+}
+
+/* ─── Entrance animations Hero ───────────────────────────── */
+.hero__tag    { animation: fadeDown 0.8s cubic-bezier(0.4,0,0.2,1) 0.15s both; }
+.hero__title  { animation: fadeUp  0.9s cubic-bezier(0.4,0,0.2,1) 0.30s both; }
+.hero__sub    { animation: fadeUp  0.9s cubic-bezier(0.4,0,0.2,1) 0.45s both; }
+.hero__btns   { animation: fadeUp  0.9s cubic-bezier(0.4,0,0.2,1) 0.60s both; }
+.hero__badges { animation: fadeUp  0.9s cubic-bezier(0.4,0,0.2,1) 0.75s both; }
 
 /* ════════════════════════════════════════════════════════════
    ÉTAPES (HOW IT WORKS)
@@ -368,8 +457,8 @@ img { max-width: 100%; display: block; }
   transition: var(--transition);
 }
 .step-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 40px rgba(201,168,76,0.22);
+  transform: translateY(-8px);
+  box-shadow: 0 16px 48px rgba(191,154,94,0.2);
   border-color: var(--gold);
 }
 
@@ -456,15 +545,39 @@ img { max-width: 100%; display: block; }
   border: 1px solid var(--border);
   overflow: hidden;
   box-shadow: 0 4px 20px var(--shadow);
-  transition: var(--transition);
+  transition: transform 0.38s cubic-bezier(0.4,0,0.2,1),
+              box-shadow 0.38s ease,
+              border-color 0.38s ease;
   position: relative;
   display: flex;
   flex-direction: column;
+  cursor: pointer;
+}
+.gift-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -80%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    110deg,
+    transparent 0%,
+    rgba(255,255,255,0.1) 50%,
+    transparent 100%
+  );
+  transform: skewX(-15deg);
+  z-index: 4;
+  pointer-events: none;
 }
 .gift-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 16px 48px rgba(201,168,76,0.25);
+  transform: translateY(-10px);
+  box-shadow: 0 22px 56px rgba(191,154,94,0.2), 0 4px 16px rgba(0,0,0,0.05);
   border-color: var(--gold);
+}
+.gift-card:hover::before {
+  left: 160%;
+  transition: left 0.65s ease;
 }
 
 .gift-card__badge {

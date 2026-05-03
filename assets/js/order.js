@@ -8,12 +8,17 @@ let currentOrder = {};
 
 /* ─── Ouvrir la modale de commande ─────────────────────── */
 function openOrder(button) {
+  // Récupère le slug depuis le bouton lui-même ou la carte parente
+  const parentCard = button.closest('[data-slug]');
+  const bonSlug    = button.dataset.slug || (parentCard ? parentCard.dataset.slug : '') || '';
+
   currentOrder = {
     title   : button.dataset.title    || '',
     price   : button.dataset.price    || '',
     cat     : button.dataset.cat      || '',
     icon    : button.dataset.icon     || 'fa-gift',
-    provider: button.dataset.provider || ''
+    provider: button.dataset.provider || '',
+    slug    : bonSlug,
   };
 
   const titleEl    = document.getElementById('modalTitle');
@@ -76,21 +81,25 @@ function closeSuccess() {
 
 /* ─── Validation d'un champ ─────────────────────────────── */
 function validateField(input) {
-  const group = input.closest('.form__group');
+  const group = input.closest('.form-group');
   if (!group) return true;
-  const value = input.value.trim();
   let valid = true;
 
-  if (input.required && !value) {
-    valid = false;
-  } else if (input.type === 'email' && value) {
-    valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-  } else if (input.type === 'tel' && value) {
-    valid = /^[+\d\s()-]{7,20}$/.test(value);
+  if (input.type === 'checkbox') {
+    valid = input.required ? input.checked : true;
+  } else {
+    const value = input.value.trim();
+    if (input.required && !value) {
+      valid = false;
+    } else if (input.type === 'email' && value) {
+      valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+    } else if (input.type === 'tel' && value) {
+      valid = /^[+\d\s()-]{7,20}$/.test(value);
+    }
+    group.classList.toggle('success', valid && !!value);
   }
 
-  group.classList.toggle('error',   !valid);
-  group.classList.toggle('success',  valid && !!value);
+  group.classList.toggle('error', !valid);
   return valid;
 }
 
@@ -104,10 +113,16 @@ function showSuccessModal(payload) {
   const msgEl  = document.getElementById('successMsg');
   const detEl  = document.getElementById('successDetails');
 
-  if (refEl)  refEl.textContent  = payload.reference;
-  if (nameEl) nameEl.textContent = payload.prenom + ' ' + payload.nom;
-  if (msgEl)  msgEl.textContent  = `Merci ${payload.prenom} ! Votre bon "${payload.bon_title}" a été réservé avec succès.`;
-  if (detEl)  detEl.innerHTML    = `<strong>Référence :</strong> ${payload.reference}<br><strong>Confirmation envoyée à :</strong> ${payload.email}`;
+  const prenom    = payload.prenom    || payload._prenom    || '';
+  const nom       = payload.nom       || payload._nom       || '';
+  const email     = payload.email     || payload._email     || '';
+  const bonTitle  = payload.bon_title || payload._bon_title || '';
+  const reference = payload.reference || '';
+
+  if (refEl)  refEl.textContent  = reference;
+  if (nameEl) nameEl.textContent = prenom + ' ' + nom;
+  if (msgEl)  msgEl.textContent  = `Merci ${prenom} ! Votre bon "${bonTitle}" a été réservé avec succès.`;
+  if (detEl)  detEl.innerHTML    = `<strong>Référence :</strong> ${reference}<br><strong>Confirmation envoyée à :</strong> ${email}`;
 
   /* Ouvrir le bon overlay (successOverlay ou successModal selon la page) */
   const overlay = document.getElementById('successOverlay') || document.getElementById('successModal');
@@ -128,10 +143,30 @@ function generateRef() {
 }
 
 /* ─── Soumission commande ────────────────────────────────── */
+function showFormError(form, msg) {
+  let errEl = form.querySelector('.form-submit-error');
+  if (!errEl) {
+    errEl = document.createElement('p');
+    errEl.className = 'form-submit-error';
+    errEl.style.cssText = 'color:#c0392b;background:#fdf3f3;border:1px solid #e8b8b8;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:.9rem;line-height:1.4;';
+    form.querySelector('[type="submit"]').insertAdjacentElement('beforebegin', errEl);
+  }
+  errEl.textContent = '⚠ ' + msg;
+  errEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function clearFormError(form) {
+  const errEl = form.querySelector('.form-submit-error');
+  if (errEl) errEl.remove();
+}
+
+/* ─── Soumission commande ────────────────────────────────── */
 async function submitOrder(event) {
   event.preventDefault();
 
   const form = document.getElementById('orderForm');
+  clearFormError(form);
+
   const inputs = form.querySelectorAll('input[required], textarea[required]');
   let allValid = true;
   inputs.forEach(input => { if (!validateField(input)) allValid = false; });
@@ -148,16 +183,26 @@ async function submitOrder(event) {
     return el ? el.value.trim() : '';
   }
 
+  const prenom = val('prenomAcheteur') || val('orderPrenom');
+  const nom    = val('nomAcheteur')    || val('orderNom');
+  const email  = val('emailAcheteur')  || val('orderEmail');
+
+  // Payload avec les noms de champs attendus par l'API
   const payload = {
-    bon_title   : currentOrder.title,
-    bon_provider: currentOrder.provider,
-    prenom      : val('prenomAcheteur') || val('orderPrenom'),
-    nom         : val('nomAcheteur')    || val('orderNom'),
-    email       : val('emailAcheteur')  || val('orderEmail'),
-    telephone   : val('telAcheteur')    || val('orderTel'),
-    destinataire: val('prenomDest')     || val('orderDestinataire'),
-    message     : val('message')        || val('orderMessage'),
-    reference   : generateRef()
+    bon_slug        : currentOrder.slug,
+    prenom_acheteur : prenom,
+    nom_acheteur    : nom,
+    email_acheteur  : email,
+    tel_acheteur    : val('telAcheteur') || val('orderTel'),
+    prenom_dest     : val('prenomDest') || val('orderDestinataire') || null,
+    nom_dest        : val('nomDest')    || null,
+    email_dest      : val('emailDest')  || null,
+    message         : val('message')    || val('orderMessage') || null,
+    // Données locales pour la modale de succès (non envoyées à l'API)
+    _prenom         : prenom,
+    _nom            : nom,
+    _email          : email,
+    _bon_title      : currentOrder.title,
   };
 
   try {
@@ -167,12 +212,27 @@ async function submitOrder(event) {
       body   : JSON.stringify(payload)
     });
 
-    if (!res.ok) throw new Error('Erreur serveur');
-    showSuccessModal(payload);
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Erreur lors de l\'enregistrement de la commande.');
+    }
+
+    // Succès réel : on affiche la référence retournée par le serveur
+    showSuccessModal({
+      reference : data.reference,
+      prenom    : prenom,
+      nom       : nom,
+      email     : email,
+      bon_title : currentOrder.title,
+    });
   } catch (err) {
     console.error('Erreur commande:', err);
-    // Fallback : afficher succès même sans serveur (demo)
-    showSuccessModal(payload);
+    const form = document.getElementById('orderForm');
+    showFormError(form,
+      err.message.includes('Failed to fetch')
+        ? 'Impossible de joindre le serveur. Vérifiez votre connexion ou réessayez dans quelques secondes.'
+        : err.message || 'Impossible de traiter votre commande. Veuillez réessayer.'
+    );
   } finally {
     submitBtn.disabled = false;
     submitBtn.innerHTML = originalText;

@@ -38,6 +38,7 @@ services:
       DB_PASS: boncadeau_pass
       PORT: 3001
       CORS_ORIGIN: "*"
+      JWT_SECRET: "boncadeau_super_secret_jwt_change_in_production"
     depends_on:
       db:
         condition: service_healthy

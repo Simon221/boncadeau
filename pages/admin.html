@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BonCadeau — Backoffice</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../assets/css/admin.css" />
+</head>
+<body>
+
+  <!-- ─── SIDEBAR ──────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar__brand">
+      <span class="brand-text">Bon<span>Cadeau</span></span>
+      <span class="brand-sub">Backoffice</span>
+    </div>
+
+    <nav class="sidebar__nav">
+      <a href="#" class="nav-item active" data-section="dashboard">
+        <i class="fas fa-chart-line"></i><span>Tableau de bord</span>
+      </a>
+      <a href="#" class="nav-item" data-section="commandes">
+        <i class="fas fa-receipt"></i><span>Commandes</span>
+        <span class="badge" id="badgeCommandes"></span>
+      </a>
+      <a href="#" class="nav-item" data-section="bons">
+        <i class="fas fa-gift"></i><span>Bons cadeaux</span>
+      </a>
+      <a href="#" class="nav-item" data-section="fournisseurs">
+        <i class="fas fa-store"></i><span>Fournisseurs</span>
+      </a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <span class="admin-name" id="adminName">Admin</span>
+      <button class="btn-logout" id="btnLogout" title="Se déconnecter">
+        <i class="fas fa-right-from-bracket"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ─── MAIN ─────────────────────────────────────────── -->
+  <main class="main-content" id="mainContent">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <button class="topbar__toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+      <h1 class="topbar__title" id="pageTitle">Tableau de bord</h1>
+      <a href="../index.html" target="_blank" class="topbar__site-link">
+        <i class="fas fa-arrow-up-right-from-square"></i> Voir le site
+      </a>
+    </header>
+
+    <!-- ══════════════════════ DASHBOARD ══════════════════ -->
+    <section id="sectionDashboard" class="section active">
+
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+          <div class="stat-card__icon" style="background:linear-gradient(135deg,#BF9A5E,#8C6B35)">
+            <i class="fas fa-gift"></i>
+          </div>
+          <div class="stat-card__body">
+            <div class="stat-card__num" id="statBons">—</div>
+            <div class="stat-card__label">Bons actifs</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__icon" style="background:linear-gradient(135deg,#56ab2f,#a8e063)">
+            <i class="fas fa-receipt"></i>
+          </div>
+          <div class="stat-card__body">
+            <div class="stat-card__num" id="statCommandes">—</div>
+            <div class="stat-card__label">Commandes totales</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__icon" style="background:linear-gradient(135deg,#4776E6,#8E54E9)">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="stat-card__body">
+            <div class="stat-card__num" id="statClients">—</div>
+            <div class="stat-card__label">Clients uniques</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__icon" style="background:linear-gradient(135deg,#f7971e,#ffd200)">
+            <i class="fas fa-coins"></i>
+          </div>
+          <div class="stat-card__body">
+            <div class="stat-card__num" id="statRevenu">—</div>
+            <div class="stat-card__label">Revenu total (FCFA)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card__header">
+          <h2 class="card__title"><i class="fas fa-clock-rotate-left"></i> Commandes récentes</h2>
+          <button class="btn btn-sm btn-ghost" onclick="showSection('commandes')">Voir tout</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="recentCommandesTable">
+            <thead>
+              <tr>
+                <th>Référence</th><th>Acheteur</th><th>Bon</th><th>Montant</th><th>Statut</th><th>Date</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════ COMMANDES ══════════════════ -->
+    <section id="sectionCommandes" class="section">
+      <div class="section-toolbar">
+        <div class="filter-group">
+          <button class="filter-pill active" data-statut="">Toutes</button>
+          <button class="filter-pill" data-statut="en_attente">En attente</button>
+          <button class="filter-pill" data-statut="confirmee">Confirmées</button>
+          <button class="filter-pill" data-statut="annulee">Annulées</button>
+        </div>
+        <div class="search-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="cmdSearch" placeholder="Rechercher une référence…" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table class="data-table" id="commandesTable">
+            <thead>
+              <tr>
+                <th>Référence</th><th>Acheteur</th><th>Email</th><th>Tél.</th>
+                <th>Bon cadeau</th><th>Montant</th><th>Statut</th><th>Date</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="commandesTbody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="cmdPagination"></div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════ BONS ══════════════════════ -->
+    <section id="sectionBons" class="section">
+      <div class="section-toolbar">
+        <button class="btn btn-primary" id="btnAddBon">
+          <i class="fas fa-plus"></i> Nouveau bon
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table class="data-table" id="bonsTable">
+            <thead>
+              <tr>
+                <th>Titre</th><th>Catégorie</th><th>Fournisseur</th>
+                <th>Prix</th><th>Note</th><th>Statut</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="bonsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════ FOURNISSEURS ═══════════════ -->
+    <section id="sectionFournisseurs" class="section">
+      <div class="section-toolbar">
+        <button class="btn btn-primary" id="btnAddFournisseur">
+          <i class="fas fa-plus"></i> Nouveau fournisseur
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table class="data-table" id="fournisseursTable">
+            <thead>
+              <tr>
+                <th>Nom</th><th>Adresse</th><th>Téléphone</th><th>Email</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="fournisseursTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ══════════════════════ MODAL BON ░░░ ══════════════ -->
+  <div class="modal-overlay" id="modalBon">
+    <div class="modal" style="max-width:780px">
+      <div class="modal__header">
+        <h2 id="modalBonTitle">Nouveau bon cadeau</h2>
+        <button class="modal__close" onclick="closeModal('modalBon')"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal__body">
+        <form id="bonForm" novalidate>
+          <input type="hidden" id="bonId" />
+          <div class="form-grid">
+            <div class="form-group col-2">
+              <label>Titre *</label>
+              <input type="text" id="bonTitre" required placeholder="Ex : Massage Relaxant 60 min" />
+            </div>
+            <div class="form-group col-2">
+              <label>Slug *</label>
+              <input type="text" id="bonSlug" required placeholder="massage-relaxant-60min" />
+              <small>Minuscules, chiffres, tirets uniquement</small>
+            </div>
+            <div class="form-group">
+              <label>Catégorie *</label>
+              <select id="bonCategorie" required><option value="">— Choisir —</option></select>
+            </div>
+            <div class="form-group">
+              <label>Fournisseur *</label>
+              <select id="bonFournisseur" required><option value="">— Choisir —</option></select>
+            </div>
+            <div class="form-group">
+              <label>Prix (FCFA) *</label>
+              <input type="number" id="bonPrix" required min="0" placeholder="75000" />
+            </div>
+            <div class="form-group">
+              <label>Badge</label>
+              <input type="text" id="bonBadge" placeholder="Populaire, Premium…" />
+            </div>
+            <div class="form-group col-2">
+              <label>Description courte *</label>
+              <textarea id="bonDescCourte" rows="2" required placeholder="Résumé visible sur la carte…"></textarea>
+            </div>
+            <div class="form-group col-2">
+              <label>Description longue</label>
+              <textarea id="bonDescLongue" rows="4" placeholder="Description complète affichée sur la page détail…"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Icône Font Awesome</label>
+              <input type="text" id="bonIcone" placeholder="fa-spa" />
+            </div>
+            <div class="form-group">
+              <label>Dégradé de couleur</label>
+              <input type="text" id="bonCouleur" placeholder="linear-gradient(135deg,#e8d5c4,#c9b8a8)" />
+            </div>
+            <div class="form-group col-2">
+              <label>Ce qui est inclus <small>(une ligne par élément)</small></label>
+              <textarea id="bonInclusions" rows="3" placeholder="60 minutes de massage&#10;Huiles essentielles bio&#10;Tisane de bienvenue"></textarea>
+            </div>
+            <div class="form-group col-2">
+              <label>Conditions d'utilisation <small>(une ligne par élément)</small></label>
+              <textarea id="bonConditions" rows="3" placeholder="Réservation obligatoire&#10;Non remboursable&#10;Valable 12 mois"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="toggle-label">
+                <input type="checkbox" id="bonActif" checked />
+                <span class="toggle-track"></span>
+                Bon actif (visible sur le site)
+              </label>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn-ghost" onclick="closeModal('modalBon')">Annuler</button>
+        <button class="btn btn-primary" id="btnSaveBon"><i class="fas fa-floppy-disk"></i> Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ MODAL FOURNISSEUR ═══════════ -->
+  <div class="modal-overlay" id="modalFournisseur">
+    <div class="modal" style="max-width:520px">
+      <div class="modal__header">
+        <h2 id="modalFournTitle">Nouveau fournisseur</h2>
+        <button class="modal__close" onclick="closeModal('modalFournisseur')"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal__body">
+        <form id="fournisseurForm" novalidate>
+          <input type="hidden" id="fournisseurId" />
+          <div class="form-grid">
+            <div class="form-group col-2">
+              <label>Nom *</label>
+              <input type="text" id="fournNom" required placeholder="Zénitude Spa" />
+            </div>
+            <div class="form-group col-2">
+              <label>Description</label>
+              <textarea id="fournDesc" rows="2" placeholder="Courte description…"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Adresse</label>
+              <input type="text" id="fournAdresse" placeholder="Almadies, Dakar" />
+            </div>
+            <div class="form-group">
+              <label>Téléphone</label>
+              <input type="text" id="fournTel" placeholder="+221 33 820 00 01" />
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="fournEmail" placeholder="contact@example.sn" />
+            </div>
+            <div class="form-group">
+              <label>Site web</label>
+              <input type="url" id="fournSite" placeholder="https://..." />
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn-ghost" onclick="closeModal('modalFournisseur')">Annuler</button>
+        <button class="btn btn-primary" id="btnSaveFournisseur"><i class="fas fa-floppy-disk"></i> Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ MODAL COMMANDE DETAIL ═══════ -->
+  <div class="modal-overlay" id="modalCommande">
+    <div class="modal" style="max-width:560px">
+      <div class="modal__header">
+        <h2>Détail commande</h2>
+        <button class="modal__close" onclick="closeModal('modalCommande')"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal__body" id="commandeDetailBody"></div>
+      <div class="modal__footer">
+        <button class="btn btn-ghost" onclick="closeModal('modalCommande')">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════ TOAST ═══════════════════ -->
+  <div class="toast" id="toast"></div>
+
+  <script src="../assets/js/admin.js"></script>
+</body>
+</html>

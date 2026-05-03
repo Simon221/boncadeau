@@ -97,6 +97,19 @@ CREATE TABLE commandes (
   FOREIGN KEY (bon_id) REFERENCES bons(id)
 );
 
+-- ─── Administrateurs ─────────────────────────────────────
+CREATE TABLE admins (
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  nom          VARCHAR(100) NOT NULL,
+  email        VARCHAR(150) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Admin par défaut : admin@boncadeau.sn / Admin2026!
+INSERT INTO admins (nom, email, password_hash) VALUES
+  ('Super Admin', 'admin@boncadeau.sn', '$2b$12$X5LHanEAGkqNDsDZ4Bdwhew9zfLvmKDJ2gZgPf7bcYbccZ33LHPCG');
+
 -- ═══════════════════════════════════════════════════════════
 -- DONNÉES DE DÉMONSTRATION
 -- ═══════════════════════════════════════════════════════════

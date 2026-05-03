@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BonCadeau — Connexion Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold: #BF9A5E;
+      --gold-light: #D4B07C;
+      --gold-dark: #8C6B35;
+      --bg: #F9F6F0;
+      --white: #FFFFFF;
+      --text: #2B2B2B;
+      --text-muted: #6B6056;
+      --border: #E2D4B8;
+      --error: #C0392B;
+    }
+    body {
+      font-family: 'Lato', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, #1a1209 0%, #2d1f0a 50%, #1a1209 100%);
+      z-index: -1;
+    }
+
+    .login-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 48px 40px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+    .login-logo .brand {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.02em;
+    }
+    .login-logo .brand span { color: var(--gold); }
+    .login-logo .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .login-logo .icon-wrap {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 16px;
+    }
+    .login-logo .icon-wrap i { color: #fff; font-size: 1.4rem; }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .form-group .input-wrap {
+      position: relative;
+    }
+    .form-group .input-wrap i {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--gold);
+      font-size: 0.9rem;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px 12px 40px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-family: 'Lato', sans-serif;
+      font-size: 0.95rem;
+      color: var(--text);
+      background: var(--bg);
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .form-group input:focus {
+      border-color: var(--gold);
+      background: #fff;
+    }
+    .form-group input.invalid { border-color: var(--error); }
+
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Lato', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+      margin-top: 8px;
+    }
+    .btn-login:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-login:active { transform: translateY(0); }
+    .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .error-msg {
+      background: #fdf0f0;
+      border: 1px solid #f5c6c6;
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: var(--error);
+      font-size: 0.88rem;
+      margin-bottom: 20px;
+      display: none;
+    }
+    .error-msg.visible { display: flex; align-items: center; gap: 8px; }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 24px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: var(--gold); }
+    .back-link i { margin-right: 6px; }
+  </style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="icon-wrap"><i class="fas fa-shield-halved"></i></div>
+      <div class="brand">Bon<span>Cadeau</span></div>
+      <div class="subtitle">Espace Administrateur</div>
+    </div>
+
+    <div class="error-msg" id="errorMsg">
+      <i class="fas fa-circle-exclamation"></i>
+      <span id="errorText">Identifiants incorrects.</span>
+    </div>
+
+    <form id="loginForm" novalidate>
+      <div class="form-group">
+        <label for="email">Adresse email</label>
+        <div class="input-wrap">
+          <i class="fas fa-envelope"></i>
+          <input type="email" id="email" placeholder="admin@boncadeau.sn" autocomplete="email" required />
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+        <div class="input-wrap">
+          <i class="fas fa-lock"></i>
+          <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required />
+        </div>
+      </div>
+      <button type="submit" class="btn-login" id="btnLogin">
+        <i class="fas fa-arrow-right-to-bracket"></i> Se connecter
+      </button>
+    </form>
+
+    <a href="../index.html" class="back-link"><i class="fas fa-arrow-left"></i>Retour au site</a>
+  </div>
+
+  <script>
+    const API = 'http://localhost:3001';
+
+    // Redirect if already logged in
+    if (localStorage.getItem('admin_token')) {
+      window.location.href = 'admin.html';
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const btn      = document.getElementById('btnLogin');
+      const errMsg   = document.getElementById('errorMsg');
+      const errText  = document.getElementById('errorText');
+
+      errMsg.classList.remove('visible');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connexion…';
+
+      try {
+        const res  = await fetch(`${API}/api/admin/login`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ email, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erreur de connexion.');
+
+        localStorage.setItem('admin_token', data.token);
+        localStorage.setItem('admin_nom',   data.nom);
+        window.location.href = 'admin.html';
+      } catch (err) {
+        errText.textContent = err.message;
+        errMsg.classList.add('visible');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-arrow-right-to-bracket"></i> Se connecter';
+      }
+    });
+  </script>
+</body>
+</html>
