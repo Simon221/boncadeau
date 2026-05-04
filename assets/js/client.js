@@ -90,7 +90,7 @@ function renderCard(c) {
             <i class="fas fa-quote-left"></i> ${escHtml(c.message)}
           </div>` : ''}
         ${canReview ? `
-          <button class="btn-review" onclick="openAvis(${c.id}, ${JSON.stringify(c.bon_titre)})">
+          <button class="btn-review" data-bon-title="${escHtml(c.bon_titre)}" onclick="openAvis(${c.id}, this.getAttribute('data-bon-title'))">
             <i class="fas fa-star"></i> Écrire un avis
           </button>` : ''}
         ${Number(c.a_avis) > 0 ? `
