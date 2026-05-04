@@ -686,7 +686,7 @@ app.get('/api/admin/commandes', requireAdmin, async (req, res) => {
 app.patch('/api/admin/commandes/:id/statut', requireAdmin, async (req, res) => {
   try {
     const { statut } = req.body;
-    if (!['en_attente','confirmee','livre','annulee'].includes(statut)) {
+    if (!['en_attente','confirmee','livre','annulee','utilise'].includes(statut)) {
       return res.status(400).json({ error: 'Statut invalide.' });
     }
     await pool.query('UPDATE commandes SET statut = ? WHERE id = ?', [statut, req.params.id]);
@@ -1005,6 +1005,146 @@ app.get('/api/commandes/:reference', async (req, res) => {
 
     if (!row) return res.status(404).json({ error: 'Commande introuvable.' });
     res.json(row);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ════════════════════════════════════════════════════════════
+   FOURNISSEURS – Middleware + Authentification + Dashboard
+   ════════════════════════════════════════════════════════════ */
+function requireFournisseur(req, res, next) {
+  const auth = req.headers.authorization || '';
+  if (!auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Non authentifié.' });
+  try {
+    const decoded = jwt.verify(auth.slice(7), JWT_SECRET);
+    if (decoded.role !== 'fournisseur') return res.status(403).json({ error: 'Accès réservé aux fournisseurs.' });
+    req.fournisseur = decoded;
+    next();
+  } catch {
+    return res.status(401).json({ error: 'Token invalide ou expiré.' });
+  }
+}
+
+/* POST /api/fournisseurs/login */
+app.post('/api/fournisseurs/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis.' });
+    const [[fournisseur]] = await pool.query(
+      'SELECT * FROM fournisseurs WHERE email = ?', [email]
+    );
+    if (!fournisseur || !fournisseur.password_hash) {
+      return res.status(401).json({ error: 'Identifiants incorrects.' });
+    }
+    if (!(await bcrypt.compare(password, fournisseur.password_hash))) {
+      return res.status(401).json({ error: 'Identifiants incorrects.' });
+    }
+    const token = jwt.sign(
+      { id: fournisseur.id, nom: fournisseur.nom, email: fournisseur.email, role: 'fournisseur' },
+      JWT_SECRET,
+      { expiresIn: JWT_EXPIRES }
+    );
+    res.json({ token, nom: fournisseur.nom, email: fournisseur.email });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* GET /api/fournisseurs/me — Informations du fournisseur connecté */
+app.get('/api/fournisseurs/me', requireFournisseur, async (req, res) => {
+  try {
+    const [[row]] = await pool.query(
+      'SELECT id, nom, description, adresse, telephone, email, site_web, logo_url FROM fournisseurs WHERE id = ?',
+      [req.fournisseur.id]
+    );
+    if (!row) return res.status(404).json({ error: 'Fournisseur introuvable.' });
+    res.json(row);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* GET /api/fournisseurs/stats — Statistiques du tableau de bord */
+app.get('/api/fournisseurs/stats', requireFournisseur, async (req, res) => {
+  try {
+    const fId = req.fournisseur.id;
+    const [[{ nb_bons }]] = await pool.query(
+      'SELECT COUNT(*) AS nb_bons FROM bons WHERE fournisseur_id = ? AND actif = 1', [fId]
+    );
+    const [[{ nb_commandes }]] = await pool.query(
+      `SELECT COUNT(*) AS nb_commandes FROM commandes c
+       JOIN bons b ON b.id = c.bon_id WHERE b.fournisseur_id = ?`, [fId]
+    );
+    const [[{ nb_utilises }]] = await pool.query(
+      `SELECT COUNT(*) AS nb_utilises FROM commandes c
+       JOIN bons b ON b.id = c.bon_id WHERE b.fournisseur_id = ? AND c.statut = 'utilise'`, [fId]
+    );
+    const [[{ nb_livres }]] = await pool.query(
+      `SELECT COUNT(*) AS nb_livres FROM commandes c
+       JOIN bons b ON b.id = c.bon_id WHERE b.fournisseur_id = ? AND c.statut = 'livre'`, [fId]
+    );
+    res.json({ nb_bons, nb_commandes, nb_utilises, nb_livres });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* GET /api/fournisseurs/commandes — Commandes filtrées par fournisseur */
+app.get('/api/fournisseurs/commandes', requireFournisseur, async (req, res) => {
+  try {
+    const fId    = req.fournisseur.id;
+    const page   = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit  = Math.min(50, parseInt(req.query.limit) || 20);
+    const offset = (page - 1) * limit;
+    const statut = req.query.statut || null;
+
+    const allowed = ['en_attente','confirmee','livre','annulee','utilise'];
+    let where  = 'WHERE b.fournisseur_id = ?';
+    const params = [fId];
+    if (statut && allowed.includes(statut)) {
+      where += ' AND c.statut = ?';
+      params.push(statut);
+    }
+
+    const [[{ total }]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM commandes c JOIN bons b ON b.id = c.bon_id ${where}`, params
+    );
+    const [rows] = await pool.query(
+      `SELECT c.id, c.reference, c.statut, c.created_at,
+              c.prenom_acheteur, c.nom_acheteur, c.email_acheteur, c.tel_acheteur,
+              c.prenom_dest, c.nom_dest, c.message,
+              b.titre AS bon_titre, b.prix, b.devise, b.slug AS bon_slug
+       FROM commandes c
+       JOIN bons b ON b.id = c.bon_id
+       ${where}
+       ORDER BY c.created_at DESC
+       LIMIT ? OFFSET ?`,
+      [...params, limit, offset]
+    );
+    res.json({ data: rows, total, page, limit, totalPages: Math.ceil(total / limit) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* PATCH /api/fournisseurs/commandes/:id/utilise — Marquer un bon comme utilisé */
+app.patch('/api/fournisseurs/commandes/:id/utilise', requireFournisseur, async (req, res) => {
+  try {
+    const fId = req.fournisseur.id;
+    // Vérifier que la commande appartient bien à ce fournisseur
+    const [[commande]] = await pool.query(
+      `SELECT c.id, c.statut FROM commandes c
+       JOIN bons b ON b.id = c.bon_id
+       WHERE c.id = ? AND b.fournisseur_id = ?`,
+      [req.params.id, fId]
+    );
+    if (!commande) return res.status(404).json({ error: 'Commande introuvable.' });
+    if (commande.statut !== 'livre') {
+      return res.status(400).json({ error: 'Seules les commandes livrées peuvent être marquées comme utilisées.' });
+    }
+    await pool.query('UPDATE commandes SET statut = ? WHERE id = ?', ['utilise', commande.id]);
+    res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

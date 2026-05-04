@@ -1,7 +1,21 @@
-Login : http://localhost:8080/pages/admin-login.html
-admin@boncadeau.sn|Admin2026!
+Admin dash
+    Login : http://localhost:8080/pages/admin-login.html
+    admin@boncadeau.sn|Admin2026!
+
+Fournisseurs dash
+    Login : http://localhost:8080/pages/fournisseur-login.html
+    Comptes de démo (MDP commun : Fournisseur2026!)
+      - contact@zenitude.sn     → Zénitude Spa
+      - contact@lelagon.sn      → Le Lagon II
+      - dakar@radissonblu.com   → Radisson Blu
+    Pour activer un fournisseur depuis l'admin SQL :
+      UPDATE fournisseurs SET password_hash='<hash_bcrypt>' WHERE email='...';
+
+
+
 
 # whatssap mettre à jour les liens : liens vers l'app ; ok
 # page tampon pour verification des bons (lien) : ok
-# Page pour fournisseurs
+# Page pour fournisseurs 
 # possibilité de faire un panier et d'avoir plusieurs bons dessus
+# ajout bouton filtre pour filtre par prix, et autres 

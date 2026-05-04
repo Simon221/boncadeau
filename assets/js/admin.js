@@ -95,7 +95,7 @@ function fmtNum(n) {
   return Number(n).toLocaleString('fr-FR');
 }
 function statutBadge(s) {
-  const labels = { en_attente:'En attente', confirmee:'Confirmée', livre:'Livré', annulee:'Annulée' };
+  const labels = { en_attente:'En attente', confirmee:'Confirmée', livre:'Livré', annulee:'Annulée', utilise:'Utilisé' };
   return `<span class="statut statut--${s}">${labels[s] || s}</span>`;
 }
 
@@ -182,6 +182,7 @@ async function loadCommandes() {
             <option value="confirmee"  ${c.statut==='confirmee' ?'selected':''}>Confirmée</option>
             <option value="livre"      ${c.statut==='livre'     ?'selected':''}>Livré</option>
             <option value="annulee"    ${c.statut==='annulee'   ?'selected':''}>Annulée</option>
+            <option value="utilise"    ${c.statut==='utilise'   ?'selected':''}>Utilisé</option>
           </select>
         </td>
         <td>${fmtDate(c.created_at)}</td>

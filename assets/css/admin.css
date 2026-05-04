@@ -300,6 +300,7 @@ a { text-decoration: none; color: inherit; }
 .statut--en_attente  { background: #fef5e7; color: var(--orange); }
 .statut--livre       { background: #e8f4fd; color: #1a6fa8; }
 .statut--annulee     { background: #fdf0f0; color: var(--red); }
+.statut--utilise     { background: #f3e8ff; color: #7c3aed; }
 .statut--actif       { background: #e9f7ef; color: var(--green); }
 .statut--inactif     { background: #f5f5f5; color: #999; }
 
@@ -444,6 +445,7 @@ a { text-decoration: none; color: inherit; }
   background: var(--white);
   border-radius: 14px;
   width: 100%;
+  max-width: 500px;
   box-shadow: 0 24px 60px rgba(0,0,0,.2);
   animation: modalIn .25s ease;
   max-height: 90vh;

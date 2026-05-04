@@ -21,15 +21,16 @@ CREATE TABLE IF NOT EXISTS categories (
 
 -- ─── Fournisseurs ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS fournisseurs (
-  id          INT AUTO_INCREMENT PRIMARY KEY,
-  nom         VARCHAR(150) NOT NULL,
-  description TEXT,
-  adresse     VARCHAR(255),
-  telephone   VARCHAR(30),
-  email       VARCHAR(150),
-  site_web    VARCHAR(255),
-  logo_url    VARCHAR(255),
-  created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  nom           VARCHAR(150) NOT NULL,
+  description   TEXT,
+  adresse       VARCHAR(255),
+  telephone     VARCHAR(30),
+  email         VARCHAR(150),
+  site_web      VARCHAR(255),
+  logo_url      VARCHAR(255),
+  password_hash VARCHAR(255),
+  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- ─── Clients (espace personnel) ──────────────────────────
@@ -97,7 +98,7 @@ CREATE TABLE IF NOT EXISTS commandes (
   nom_dest         VARCHAR(100),
   email_dest       VARCHAR(150),
   message          TEXT,
-  statut           ENUM('en_attente','confirmee','livre','annulee') DEFAULT 'en_attente',
+  statut           ENUM('en_attente','confirmee','livre','annulee','utilise') DEFAULT 'en_attente',
   created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (bon_id)    REFERENCES bons(id),
   FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL
@@ -158,6 +159,12 @@ INSERT IGNORE INTO fournisseurs (nom, description, adresse, telephone, email) VA
   ('Le Jardin',       'Brunch et déjeuner en terrasse dans un cadre fleuri', 'Fann Résidence, Dakar','+221 33 820 00 12', 'info@lejardin.sn'),
   ('Trek Sénégal',    'Randonnées guidées en pleine nature au Sénégal',      'Thiès',                '+221 77 500 00 13', 'guide@treksenegal.sn'),
   ('Dakar Surf Club', 'École de surf et kitesurf sur la plage des Almadies', 'Almadies, Dakar',      '+221 77 500 00 14', 'ride@dakarsurfclub.sn');
+
+-- Fournisseurs de démo avec accès dashboard : MDP = Fournisseur2026!
+-- $2b$12$rD8.wpOufH8W29DeI6Uwa.1ooOixfaer7.7tclzZgfvbojhbCOPrW
+UPDATE fournisseurs SET password_hash = '$2b$12$rD8.wpOufH8W29DeI6Uwa.1ooOixfaer7.7tclzZgfvbojhbCOPrW'
+  WHERE email IN ('contact@zenitude.sn', 'contact@lelagon.sn', 'dakar@radissonblu.com')
+    AND password_hash IS NULL;
 
 INSERT IGNORE INTO bons (categorie_id, fournisseur_id, titre, slug, description_courte, description_longue, prix, icone, couleur_fond, badge, note_moyenne, nb_avis) VALUES
   (1, 1, 'Massage Relaxant 60 min',      'massage-relaxant-60min',

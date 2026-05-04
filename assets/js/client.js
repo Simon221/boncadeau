@@ -42,6 +42,7 @@ const STEPS = [
   { key: 'en_attente', label: 'En attente', icon: 'fa-clock'        },
   { key: 'confirmee',  label: 'Confirmée',  icon: 'fa-check-circle' },
   { key: 'livre',      label: 'Livré',      icon: 'fa-box-open'     },
+  { key: 'utilise',    label: 'Utilisé',    icon: 'fa-check-double' },
 ];
 
 function buildStepper(statut) {
@@ -54,7 +55,12 @@ function buildStepper(statut) {
         </div>
       </div>`;
   }
-  const currentIdx = STEPS.findIndex(s => s.key === statut);
+  let currentIdx = STEPS.findIndex(s => s.key === statut);
+  // Fallback si le statut n'existe pas dans STEPS
+  if (currentIdx === -1) {
+    currentIdx = 0; // affiche au moins la première étape
+    console.warn(`Statut inconnu: "${statut}". Étapes disponibles:`, STEPS.map(s => s.key));
+  }
   return `
     <div class="order-stepper">
       ${STEPS.map((s, i) => `
@@ -74,7 +80,7 @@ function renderCard(c) {
   const headerContent = c.image_url
     ? `<img src="${escHtml(c.image_url)}" alt="${escHtml(c.bon_titre)}" class="order-card__photo" />`
     : `<i class="fas ${escHtml(c.icone || 'fa-gift')}"></i>`;
-  const canReview = c.statut === 'livre' && Number(c.a_avis) === 0;
+  const canReview = (c.statut === 'livre' || c.statut === 'utilise') && Number(c.a_avis) === 0;
 
   const pageUrl = window.location.origin + '/pages/commande.html?ref=' + encodeURIComponent(c.reference);
 
@@ -97,7 +103,7 @@ function renderCard(c) {
             <i class="fas fa-quote-left"></i> ${escHtml(c.message)}
           </div>` : ''}
         <div class="order-actions">
-          ${(c.statut === 'livre') ? `
+          ${(c.statut === 'livre' || c.statut === 'utilise') ? `
             <button class="btn-voucher" onclick="openVoucher(${c.id})">
               <i class="fas fa-ticket-alt"></i> Mon bon cadeau
             </button>

@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BonCadeau — Dashboard Fournisseur</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="../assets/css/admin.css" />
+  <style>
+    /* Overrides couleur teal pour l'espace fournisseur */
+    :root {
+      --gold:       #0d9488;
+      --gold-light: #14b8a6;
+      --gold-dark:  #0f766e;
+      --sidebar-bg: #042f2e;
+    }
+    .brand-text span { color: #14b8a6; }
+
+    /* Badge utilisé */
+    .statut--utilise { background: #f3e8ff; color: #7c3aed; }
+
+    /* ─── Modal de confirmation ────────────────────────── */
+    .modal--confirm {
+      max-width: 420px;
+      text-align: center;
+      padding: 40px 36px 32px;
+      border-radius: 16px;
+    }
+    .confirm-modal__icon {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .confirm-modal__icon-ring {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #14b8a6, #0f766e);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 12px rgba(20,184,166,.12);
+      animation: ring-pulse 2s infinite;
+    }
+    .confirm-modal__icon-ring i {
+      color: #fff;
+      font-size: 1.6rem;
+    }
+    @keyframes ring-pulse {
+      0%,100% { box-shadow: 0 0 0 12px rgba(20,184,166,.12); }
+      50%      { box-shadow: 0 0 0 18px rgba(20,184,166,.06); }
+    }
+    .confirm-modal__title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 8px;
+    }
+    .confirm-modal__sub {
+      font-size: .88rem;
+      color: #64748b;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .confirm-modal__card {
+      background: #f0fdfa;
+      border: 1px solid #99f6e4;
+      border-radius: 10px;
+      padding: 16px 20px;
+      text-align: left;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .confirm-modal__card-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: .88rem;
+      color: #1e293b;
+    }
+    .confirm-modal__card-row i {
+      width: 16px;
+      text-align: center;
+      color: #0d9488;
+      flex-shrink: 0;
+    }
+    .confirm-modal__card-row code {
+      font-size: .82rem;
+      background: #ccfbf1;
+      color: #0f766e;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+    .confirm-modal__warning {
+      font-size: .8rem;
+      color: #b45309;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 8px 14px;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+    }
+    .confirm-modal__actions {
+      display: flex;
+      gap: 12px;
+    }
+    .confirm-modal__btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-family: 'Lato', sans-serif;
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: opacity .2s, transform .15s;
+    }
+    .confirm-modal__btn:hover  { opacity: .88; transform: translateY(-1px); }
+    .confirm-modal__btn:active { transform: translateY(0); }
+    .confirm-modal__btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    .confirm-modal__btn--cancel {
+      background: #f1f5f9;
+      color: #475569;
+    }
+    .confirm-modal__btn--confirm {
+      background: linear-gradient(135deg, #14b8a6, #0f766e);
+      color: #fff;
+    }
+
+    /* Bouton marquer utilisé */
+    .btn-utilise {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: linear-gradient(135deg, #14b8a6, #0f766e);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: .8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .2s, transform .15s;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    .btn-utilise:hover { opacity: .9; transform: translateY(-1px); }
+    .btn-utilise:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    /* Info box fournisseur dans le sidebar */
+    .fourn-info {
+      padding: 14px 16px;
+      margin: 12px;
+      background: rgba(20,184,166,.12);
+      border-radius: 8px;
+      border: 1px solid rgba(20,184,166,.25);
+    }
+    .fourn-info__label {
+      font-size: .68rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.4);
+      margin-bottom: 4px;
+    }
+    .fourn-info__nom {
+      font-size: .88rem;
+      font-weight: 700;
+      color: #99f6e4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── SIDEBAR ──────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar__brand">
+      <span class="brand-text">Bon<span>Cadeau</span></span>
+      <span class="brand-sub">Espace Fournisseur</span>
+    </div>
+
+    <div class="fourn-info">
+      <div class="fourn-info__label">Connecté en tant que</div>
+      <div class="fourn-info__nom" id="fournisseurNom">—</div>
+    </div>
+
+    <nav class="sidebar__nav">
+      <a href="#" class="nav-item active" data-section="dashboard">
+        <i class="fas fa-chart-line"></i><span>Tableau de bord</span>
+      </a>
+      <a href="#" class="nav-item" data-section="commandes">
+        <i class="fas fa-receipt"></i><span>Mes commandes</span>
+        <span class="badge" id="badgeCommandes"></span>
+      </a>
+    </nav>
+
+    <div class="sidebar__footer">
+      <span class="admin-name" id="adminName">Fournisseur</span>
+      <button class="btn-logout" id="btnLogout" title="Se déconnecter">
+        <i class="fas fa-right-from-bracket"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ─── MAIN ─────────────────────────────────────────── -->
+  <main class="main-content" id="mainContent">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <button class="topbar__toggle" id="sidebarToggle"><i class="fas fa-bars"></i></button>
+      <h1 class="topbar__title" id="pageTitle">Tableau de bord</h1>
+      <a href="../index.html" target="_blank" class="topbar__site-link">
+        <i class="fas fa-arrow-up-right-from-square"></i> Voir le site
+      </a>
+    </header>
+
+    <!-- ══════════════════════ DASHBOARD ══════════════════ -->
+    <section id="sectionDashboard" class="section active">
+
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+          <div class="stat-card__icon" style="background:linear-gradient(135deg,#0d9488,#0f766e)">
+            <i class="fas fa-gift"></i>
+          </div>
+          <div class="stat-card__body">
+            <div class="stat-card__num" id="statBons">—</div>
+            <div class="stat-card__label">Mes bons actifs</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__icon" style="background:linear-gradient(135deg,#56ab2f,#a8e063)">
+            <i class="fas fa-receipt"></i>
+          </div>
+          <div class="stat-card__body">
+            <div class="stat-card__num" id="statCommandes">—</div>
+            <div class="stat-card__label">Commandes reçues</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__icon" style="background:linear-gradient(135deg,#2563eb,#60a5fa)">
+            <i class="fas fa-truck"></i>
+          </div>
+          <div class="stat-card__body">
+            <div class="stat-card__num" id="statLivres">—</div>
+            <div class="stat-card__label">Bons livrés</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__icon" style="background:linear-gradient(135deg,#7c3aed,#a78bfa)">
+            <i class="fas fa-check-double"></i>
+          </div>
+          <div class="stat-card__body">
+            <div class="stat-card__num" id="statUtilises">—</div>
+            <div class="stat-card__label">Bons utilisés</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Commandes récentes -->
+      <div class="card" style="margin-top:24px;">
+        <div class="card__header">
+          <h2 class="card__title"><i class="fas fa-clock" style="margin-right:8px;color:var(--gold)"></i>Commandes récentes</h2>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Référence</th>
+                <th>Client</th>
+                <th>Bon cadeau</th>
+                <th>Montant</th>
+                <th>Statut</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody id="recentCommandesTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════ COMMANDES ══════════════════ -->
+    <section id="sectionCommandes" class="section">
+
+      <div class="section-toolbar">
+        <div class="filter-group">
+          <button class="filter-pill active" data-statut="">Toutes</button>
+          <button class="filter-pill" data-statut="en_attente">En attente</button>
+          <button class="filter-pill" data-statut="confirmee">Confirmées</button>
+          <button class="filter-pill" data-statut="livre">Livrées</button>
+          <button class="filter-pill" data-statut="utilise">Utilisées</button>
+          <button class="filter-pill" data-statut="annulee">Annulées</button>
+        </div>
+        <div class="search-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="cmdSearch" placeholder="Rechercher une référence…" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Référence</th>
+                <th>Client</th>
+                <th>Bon cadeau</th>
+                <th>Montant</th>
+                <th>Statut</th>
+                <th>Date</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="commandesTbody"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="cmdPagination"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ─── MODAL CONFIRMATION UTILISATION ─────────────────── -->
+  <div class="modal-overlay" id="modalConfirmUtilise">
+    <div class="modal modal--confirm">
+      <div class="confirm-modal__icon">
+        <div class="confirm-modal__icon-ring">
+          <i class="fas fa-check-double"></i>
+        </div>
+      </div>
+      <h3 class="confirm-modal__title">Valider l'utilisation</h3>
+      <p class="confirm-modal__sub">Vous êtes sur le point de marquer ce bon comme utilisé.</p>
+      <div class="confirm-modal__card">
+        <div class="confirm-modal__card-row">
+          <i class="fas fa-gift"></i>
+          <span id="confirmBonTitre">—</span>
+        </div>
+        <div class="confirm-modal__card-row">
+          <i class="fas fa-user"></i>
+          <span id="confirmClient">—</span>
+        </div>
+        <div class="confirm-modal__card-row">
+          <i class="fas fa-hashtag"></i>
+          <code id="confirmRef">—</code>
+        </div>
+      </div>
+      <p class="confirm-modal__warning">
+        <i class="fas fa-triangle-exclamation"></i>
+        Cette action est irréversible.
+      </p>
+      <div class="confirm-modal__actions">
+        <button class="confirm-modal__btn confirm-modal__btn--cancel" onclick="closeModal('modalConfirmUtilise')">
+          <i class="fas fa-xmark"></i> Annuler
+        </button>
+        <button class="confirm-modal__btn confirm-modal__btn--confirm" id="btnConfirmUtilise">
+          <i class="fas fa-check-double"></i> Confirmer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── MODAL DÉTAIL COMMANDE ─────────────────────────── -->
+  <div class="modal-overlay" id="modalCommande">
+    <div class="modal">
+      <div class="modal__header">
+        <h3 class="modal__title"><i class="fas fa-receipt" style="margin-right:8px;color:var(--gold)"></i>Détail de la commande</h3>
+        <button class="modal__close" onclick="closeModal('modalCommande')"><i class="fas fa-xmark"></i></button>
+      </div>
+      <div class="modal__body" id="commandeDetailBody"></div>
+    </div>
+  </div>
+
+  <!-- ─── TOAST ─────────────────────────────────────────── -->
+  <div class="toast" id="toast"></div>
+
+  <script src="../assets/js/fournisseur.js"></script>
+</body>
+</html>
