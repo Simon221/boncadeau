@@ -131,7 +131,7 @@ function initReveal() {
    API – CHARGEMENT DYNAMIQUE DES BONS
    ════════════════════════════════════════════════════════════ */
 
-const API_BASE = 'http://localhost:3001';
+const API_BASE = '';
 
 function escHtml(str) {
   return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

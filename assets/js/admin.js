@@ -3,7 +3,9 @@
    ═══════════════════════════════════════════════════════════ */
 'use strict';
 
-const API = 'http://localhost:3001';
+// URL de base vide → les appels /api/... sont relatifs au domaine courant
+// nginx redirige /api/ vers le conteneur api:3001
+const API = '';
 
 /* ─── Auth ─────────────────────────────────────────────── */
 const token = localStorage.getItem('admin_token');

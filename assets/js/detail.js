@@ -4,7 +4,7 @@
 
 'use strict';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = '/api';
 
 /* ─── Utilitaires ────────────────────────────────────────── */
 function qs(selector) { return document.querySelector(selector); }

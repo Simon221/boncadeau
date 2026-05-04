@@ -59,7 +59,7 @@ function openOrder(button) {
   /* Préremplir avec les infos du client connecté */
   const clientToken = localStorage.getItem('client_token');
   if (clientToken) {
-    fetch('http://localhost:3001/api/clients/me', {
+    fetch('/api/clients/me', {
       headers: { 'Authorization': 'Bearer ' + clientToken }
     })
     .then(r => r.ok ? r.json() : null)
@@ -229,7 +229,7 @@ async function submitOrder(event) {
     const headers = { 'Content-Type': 'application/json' };
     if (clientToken) headers['Authorization'] = 'Bearer ' + clientToken;
 
-    const res = await fetch('http://localhost:3001/api/commandes', {
+    const res = await fetch('/api/commandes', {
       method : 'POST',
       headers,
       body   : JSON.stringify(payload)

@@ -6,17 +6,17 @@ services:
     container_name: boncadeau_db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root_secret
-      MYSQL_DATABASE: boncadeau
-      MYSQL_USER: boncadeau_user
-      MYSQL_PASSWORD: boncadeau_pass
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE:      ${MYSQL_DATABASE}
+      MYSQL_USER:          ${MYSQL_USER}
+      MYSQL_PASSWORD:      ${MYSQL_PASSWORD}
     ports:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
       - ./api/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "boncadeau_user", "-pboncadeau_pass"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${MYSQL_USER}", "-p${MYSQL_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -30,23 +30,13 @@ services:
     restart: unless-stopped
     ports:
       - "3001:3001"
+    env_file: .env                  # charge JWT_SECRET, SMTP_*, APP_URL, etc.
     environment:
       DB_HOST: db
       DB_PORT: 3306
-      DB_NAME: boncadeau
-      DB_USER: boncadeau_user
-      DB_PASS: boncadeau_pass
-      PORT: 3001
-      CORS_ORIGIN: "*"
-      JWT_SECRET: "boncadeau_super_secret_jwt_change_in_production"
-      # ─── Configuration SMTP (email) ───────────────────────
-      SMTP_HOST: "smtp.gmail.com"
-      SMTP_PORT: "587"
-      SMTP_SECURE: "false"
-      SMTP_USER: "vtsen221@gmail.com"
-      SMTP_PASS: "zbzmjjdzmexfxxpm"
-      EMAIL_FROM: "BonCadeau SN <vtsen221@gmail.com>"
-      APP_URL: "http://localhost:8080"
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASS: ${MYSQL_PASSWORD}
     volumes:
       - ./assets/images/bons:/app/uploads/bons
     depends_on:
@@ -59,9 +49,10 @@ services:
     container_name: boncadeau_frontend
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "${FRONTEND_PORT:-8080}:80"
     volumes:
       - .:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro   # proxy /api/ → api:3001
     depends_on:
       - api
 
