@@ -4,12 +4,14 @@
 
 SET NAMES utf8mb4;
 SET CHARACTER SET utf8mb4;
+-- Désactivé pendant la création pour éviter les erreurs d'ordre
+SET FOREIGN_KEY_CHECKS = 0;
 
 CREATE DATABASE IF NOT EXISTS boncadeau CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE boncadeau;
 
 -- ─── Categories ──────────────────────────────────────────
-CREATE TABLE categories (
+CREATE TABLE IF NOT EXISTS categories (
   id         INT AUTO_INCREMENT PRIMARY KEY,
   slug       VARCHAR(50)  NOT NULL UNIQUE,
   nom        VARCHAR(100) NOT NULL,
@@ -18,7 +20,7 @@ CREATE TABLE categories (
 );
 
 -- ─── Fournisseurs ────────────────────────────────────────
-CREATE TABLE fournisseurs (
+CREATE TABLE IF NOT EXISTS fournisseurs (
   id          INT AUTO_INCREMENT PRIMARY KEY,
   nom         VARCHAR(150) NOT NULL,
   description TEXT,
@@ -30,8 +32,19 @@ CREATE TABLE fournisseurs (
   created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ─── Clients (espace personnel) ──────────────────────────
+CREATE TABLE IF NOT EXISTS clients (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  prenom        VARCHAR(100) NOT NULL,
+  nom           VARCHAR(100) NOT NULL,
+  email         VARCHAR(150) NOT NULL UNIQUE,
+  telephone     VARCHAR(30),
+  password_hash VARCHAR(255) NOT NULL,
+  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- ─── Bons cadeaux ────────────────────────────────────────
-CREATE TABLE bons (
+CREATE TABLE IF NOT EXISTS bons (
   id              INT AUTO_INCREMENT PRIMARY KEY,
   categorie_id    INT NOT NULL,
   fournisseur_id  INT NOT NULL,
@@ -42,6 +55,7 @@ CREATE TABLE bons (
   prix            DECIMAL(12,2) NOT NULL,
   devise          VARCHAR(10) DEFAULT 'FCFA',
   icone           VARCHAR(50)  DEFAULT 'fa-gift',
+  image_url       VARCHAR(255),
   couleur_fond    VARCHAR(200),
   badge           VARCHAR(80),
   note_moyenne    DECIMAL(3,2) DEFAULT 5.00,
@@ -53,7 +67,7 @@ CREATE TABLE bons (
 );
 
 -- ─── Inclusions (ce qui est compris dans le bon) ─────────
-CREATE TABLE bon_inclusions (
+CREATE TABLE IF NOT EXISTS bon_inclusions (
   id     INT AUTO_INCREMENT PRIMARY KEY,
   bon_id INT NOT NULL,
   texte  VARCHAR(255) NOT NULL,
@@ -61,41 +75,16 @@ CREATE TABLE bon_inclusions (
 );
 
 -- ─── Conditions d'utilisation ────────────────────────────
-CREATE TABLE bon_conditions (
+CREATE TABLE IF NOT EXISTS bon_conditions (
   id     INT AUTO_INCREMENT PRIMARY KEY,
   bon_id INT NOT NULL,
   texte  VARCHAR(255) NOT NULL,
   FOREIGN KEY (bon_id) REFERENCES bons(id) ON DELETE CASCADE
 );
 
--- ─── Clients (espace personnel) ──────────────────────────
-CREATE TABLE clients (
-  id            INT AUTO_INCREMENT PRIMARY KEY,
-  prenom        VARCHAR(100) NOT NULL,
-  nom           VARCHAR(100) NOT NULL,
-  email         VARCHAR(150) NOT NULL UNIQUE,
-  telephone     VARCHAR(30),
-  password_hash VARCHAR(255) NOT NULL,
-  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- ─── Avis clients ─────────────────────────────────────────
-CREATE TABLE avis (
-  id           INT AUTO_INCREMENT PRIMARY KEY,
-  bon_id       INT NOT NULL,
-  commande_id  INT,
-  client_id    INT,
-  auteur       VARCHAR(100) NOT NULL,
-  note         TINYINT NOT NULL CHECK (note BETWEEN 1 AND 5),
-  commentaire  TEXT,
-  date_avis    DATE NOT NULL,
-  FOREIGN KEY (bon_id)      REFERENCES bons(id) ON DELETE CASCADE,
-  FOREIGN KEY (commande_id) REFERENCES commandes(id) ON DELETE SET NULL,
-  FOREIGN KEY (client_id)   REFERENCES clients(id) ON DELETE SET NULL
-);
-
 -- ─── Commandes ────────────────────────────────────────────
-CREATE TABLE commandes (
+-- (doit être créée AVANT avis car avis y fait référence)
+CREATE TABLE IF NOT EXISTS commandes (
   id               INT AUTO_INCREMENT PRIMARY KEY,
   reference        VARCHAR(20)  NOT NULL UNIQUE,
   bon_id           INT NOT NULL,
@@ -110,35 +99,52 @@ CREATE TABLE commandes (
   message          TEXT,
   statut           ENUM('en_attente','confirmee','livre','annulee') DEFAULT 'en_attente',
   created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (bon_id)   REFERENCES bons(id),
+  FOREIGN KEY (bon_id)    REFERENCES bons(id),
   FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL
 );
 
--- ─── Administrateurs ─────────────────────────────────────
-CREATE TABLE admins (
+-- ─── Avis clients ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS avis (
   id           INT AUTO_INCREMENT PRIMARY KEY,
-  nom          VARCHAR(100) NOT NULL,
-  email        VARCHAR(150) NOT NULL UNIQUE,
-  password_hash VARCHAR(255) NOT NULL,
-  created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  bon_id       INT NOT NULL,
+  commande_id  INT,
+  client_id    INT,
+  auteur       VARCHAR(100) NOT NULL,
+  note         TINYINT NOT NULL CHECK (note BETWEEN 1 AND 5),
+  commentaire  TEXT,
+  date_avis    DATE NOT NULL,
+  FOREIGN KEY (bon_id)      REFERENCES bons(id) ON DELETE CASCADE,
+  FOREIGN KEY (commande_id) REFERENCES commandes(id) ON DELETE SET NULL,
+  FOREIGN KEY (client_id)   REFERENCES clients(id) ON DELETE SET NULL
 );
 
+-- ─── Administrateurs ─────────────────────────────────────
+CREATE TABLE IF NOT EXISTS admins (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  nom           VARCHAR(100) NOT NULL,
+  email         VARCHAR(150) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+SET FOREIGN_KEY_CHECKS = 1;
+
 -- Admin par défaut : admin@boncadeau.sn / Admin2026!
-INSERT INTO admins (nom, email, password_hash) VALUES
+INSERT IGNORE INTO admins (nom, email, password_hash) VALUES
   ('Super Admin', 'admin@boncadeau.sn', '$2b$12$X5LHanEAGkqNDsDZ4Bdwhew9zfLvmKDJ2gZgPf7bcYbccZ33LHPCG');
 
 -- ═══════════════════════════════════════════════════════════
 -- DONNÉES DE DÉMONSTRATION
 -- ═══════════════════════════════════════════════════════════
 
-INSERT INTO categories (slug, nom, icone) VALUES
+INSERT IGNORE INTO categories (slug, nom, icone) VALUES
   ('bienetre',  'Bien-être',      'fa-spa'),
   ('mode',      'Mode & Montres', 'fa-tshirt'),
   ('hotel',     'Séjours',        'fa-hotel'),
   ('gastro',    'Gastronomie',    'fa-utensils'),
   ('aventure',  'Aventure',       'fa-mountain');
 
-INSERT INTO fournisseurs (nom, description, adresse, telephone, email) VALUES
+INSERT IGNORE INTO fournisseurs (nom, description, adresse, telephone, email) VALUES
   ('Zénitude Spa',    'Institut de bien-être haut de gamme à Dakar',         'Almadies, Dakar',      '+221 33 820 00 01', 'contact@zenitude.sn'),
   ('Hammam Royal',    'Hammam et spa traditionnel au cœur de Dakar',          'Plateau, Dakar',       '+221 33 820 00 02', 'info@hammamroyal.sn'),
   ('Institut Clarins','Soins visage et corps avec produits Clarins',          'Mermoz, Dakar',        '+221 33 820 00 03', 'dakar@clarins.com'),
@@ -153,7 +159,7 @@ INSERT INTO fournisseurs (nom, description, adresse, telephone, email) VALUES
   ('Trek Sénégal',    'Randonnées guidées en pleine nature au Sénégal',      'Thiès',                '+221 77 500 00 13', 'guide@treksenegal.sn'),
   ('Dakar Surf Club', 'École de surf et kitesurf sur la plage des Almadies', 'Almadies, Dakar',      '+221 77 500 00 14', 'ride@dakarsurfclub.sn');
 
-INSERT INTO bons (categorie_id, fournisseur_id, titre, slug, description_courte, description_longue, prix, icone, couleur_fond, badge, note_moyenne, nb_avis) VALUES
+INSERT IGNORE INTO bons (categorie_id, fournisseur_id, titre, slug, description_courte, description_longue, prix, icone, couleur_fond, badge, note_moyenne, nb_avis) VALUES
   (1, 1, 'Massage Relaxant 60 min',      'massage-relaxant-60min',
    'Une heure de détente absolue avec notre massage suédois signature. Corps et esprit apaisés.',
    'Offrez-vous une véritable parenthèse de bien-être avec ce massage suédois de 60 minutes réalisé par nos thérapeutes certifiés. Huiles essentielles bio, ambiance tamisée et musique douce : tout est pensé pour vous transporter dans un état de relaxation profond. Idéal après une semaine chargée ou comme cadeau d''anniversaire.',
@@ -220,7 +226,7 @@ INSERT INTO bons (categorie_id, fournisseur_id, titre, slug, description_courte,
    60000, 'fa-water', 'linear-gradient(135deg, #e1f5fe, #81d4fa)', 'Adrénaline', 4.85, 45);
 
 -- ─── Inclusions ──────────────────────────────────────────
-INSERT INTO bon_inclusions (bon_id, texte) VALUES
+INSERT IGNORE INTO bon_inclusions (bon_id, texte) VALUES
   (1, '60 minutes de massage suédois'), (1, 'Huiles essentielles bio'), (1, 'Tisane de bienvenue'), (1, 'Accès vestiaires & douches'),
   (2, 'Journée complète (9h–19h)'), (2, 'Hammam + gommage savon noir'), (2, 'Sauna finlandais'), (2, 'Bain à remous'), (2, 'Massage 60 min'),
   (3, 'Diagnostic de peau'), (3, 'Nettoyage en profondeur'), (3, 'Masque repulpant'), (3, 'Massage lifting'), (3, 'Produits Clarins offerts'),
@@ -236,7 +242,7 @@ INSERT INTO bon_inclusions (bon_id, texte) VALUES
   (13, 'Cours 2h avec moniteur diplômé'), (13, 'Matériel complet fourni'), (13, 'Photos souvenir de la session');
 
 -- ─── Conditions ──────────────────────────────────────────
-INSERT INTO bon_conditions (bon_id, texte) VALUES
+INSERT IGNORE INTO bon_conditions (bon_id, texte) VALUES
   (1, 'Réservation obligatoire 48h à l''avance'), (1, 'Valable 12 mois à compter de la date d''achat'), (1, 'Non remboursable après utilisation'),
   (2, 'Réservation obligatoire 72h à l''avance'), (2, 'Valable 12 mois'), (2, 'Non disponible les jours fériés'),
   (3, 'Sur rendez-vous uniquement'), (3, 'Valable 12 mois'), (3, 'Convient à tous types de peau'),
@@ -252,7 +258,7 @@ INSERT INTO bon_conditions (bon_id, texte) VALUES
   (13, 'Selon conditions météo'), (13, 'Âge minimum 14 ans'), (13, 'Valable 12 mois');
 
 -- ─── Avis clients ────────────────────────────────────────
-INSERT INTO avis (bon_id, auteur, note, commentaire, date_avis) VALUES
+INSERT IGNORE INTO avis (bon_id, auteur, note, commentaire, date_avis) VALUES
   (1, 'Fatou D.', 5, 'Un massage incroyable, je me suis sentie comme une reine !', '2026-04-10'),
   (1, 'Mamadou S.', 5, 'Parfait comme cadeau pour ma femme, elle a adoré.', '2026-03-22'),
   (1, 'Aïssatou B.', 4, 'Très bon massage, personnel aux petits soins.', '2026-02-14'),
