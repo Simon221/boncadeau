@@ -35,10 +35,20 @@
 
   <!-- ─── HERO ──────────────────────────────────────────── -->
   <section class="hero">
+
+    <!-- ── Backgrounds des slides ─────────────────────── -->
+    <div class="hero-slider" aria-hidden="true">
+      <div class="hero-slide hero-slide--1 is-active"></div>
+      <div class="hero-slide hero-slide--2"></div>
+      <div class="hero-slide hero-slide--3"></div>
+    </div>
+
+    <!-- ── Effets décoratifs (orbes flottantes) ─────────── -->
     <div class="hero__orb hero__orb--1"></div>
     <div class="hero__orb hero__orb--2"></div>
     <div class="hero__orb hero__orb--3"></div>
-    <div class="hero__overlay"></div>
+
+    <!-- ── Contenu central ───────────────────────────────── -->
     <div class="hero__content">
       <p class="hero__tag">La plateforme numéro 1 des bons cadeaux</p>
       <h1 class="hero__title">Offrez des moments<br /><span class="gold-text">inoubliables</span></h1>
@@ -52,11 +62,29 @@
         </button>
       </div>
     </div>
+
+    <!-- ── Badges ────────────────────────────────────────── -->
     <div class="hero__badges">
       <div class="badge"><i class="fas fa-shield-alt"></i><span>Paiement sécurisé</span></div>
       <div class="badge"><i class="fas fa-envelope-open-text"></i><span>Livraison email immédiate</span></div>
       <div class="badge"><i class="fas fa-undo"></i><span>Validité 12 mois</span></div>
     </div>
+
+    <!-- ── Contrôles slider ───────────────────────────────── -->
+    <div class="hero-controls">
+      <button class="hero-arrow hero-arrow--prev" aria-label="Slide précédent">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <div class="hero-dots" role="tablist">
+        <button class="hero-dot is-active" data-slide="0" aria-label="Slide 1"></button>
+        <button class="hero-dot" data-slide="1" aria-label="Slide 2"></button>
+        <button class="hero-dot" data-slide="2" aria-label="Slide 3"></button>
+      </div>
+      <button class="hero-arrow hero-arrow--next" aria-label="Slide suivant">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+
   </section>
 
   <!-- ─── COMMENT ÇA MARCHE ─────────────────────────────── -->

@@ -36,7 +36,78 @@ document.addEventListener('DOMContentLoaded', async function () {
   initCharCounter();
   initHeaderScroll();
   initReveal();
+  initHeroSlider();
 });
+
+/* ════════════════════════════════════════════════════════════
+   HERO SLIDER
+   ════════════════════════════════════════════════════════════ */
+function initHeroSlider() {
+  const SLIDES_DATA = [
+    {
+      tag:   'La plateforme numéro 1 des bons cadeaux',
+      title: 'Offrez des moments<br><span class="gold-text">inoubliables</span>',
+      sub:   'Bien-être, mode, séjours, gastronomie… trouvez le cadeau parfait pour chaque occasion.',
+    },
+    {
+      tag:   '✦ Mode & Montres de Luxe',
+      title: 'L\'élégance en<br><span class="gold-text">cadeau</span>',
+      sub:   'Montres haut de gamme, bijoux de créateurs, prêt-à-porter… Sublimez ceux que vous aimez avec une touche d\'élégance.',
+    },
+    {
+      tag:   '✦ Séjours & Évasion',
+      title: 'Offrez une vraie<br><span class="gold-text">escapade</span>',
+      sub:   'Hôtels 5★, week-ends balnéaires, aventures insolites… Créez des souvenirs qui durent toute une vie.',
+    },
+  ];
+
+  const slideEls = document.querySelectorAll('.hero-slide');
+  const dots     = document.querySelectorAll('.hero-dot');
+  const tagEl    = document.querySelector('.hero__tag');
+  const titleEl  = document.querySelector('.hero__title');
+  const subEl    = document.querySelector('.hero__sub');
+  if (!slideEls.length) return;
+
+  let current = 0;
+  let timer;
+
+  function goTo(n) {
+    slideEls[current].classList.remove('is-active');
+    dots[current].classList.remove('is-active');
+    current = ((n % SLIDES_DATA.length) + SLIDES_DATA.length) % SLIDES_DATA.length;
+    slideEls[current].classList.add('is-active');
+    dots[current].classList.add('is-active');
+    // Fondu du texte
+    tagEl.style.opacity   = '0';
+    titleEl.style.opacity = '0';
+    subEl.style.opacity   = '0';
+    setTimeout(() => {
+      const d = SLIDES_DATA[current];
+      tagEl.textContent  = d.tag;
+      titleEl.innerHTML  = d.title;
+      subEl.textContent  = d.sub;
+      tagEl.style.opacity   = '1';
+      titleEl.style.opacity = '1';
+      subEl.style.opacity   = '1';
+    }, 380);
+  }
+
+  function startTimer() {
+    timer = setInterval(() => goTo(current + 1), 5500);
+  }
+  function resetTimer() { clearInterval(timer); startTimer(); }
+
+  dots.forEach((dot, i) => dot.addEventListener('click', () => { goTo(i); resetTimer(); }));
+  document.querySelector('.hero-arrow--prev')?.addEventListener('click', () => { goTo(current - 1); resetTimer(); });
+  document.querySelector('.hero-arrow--next')?.addEventListener('click', () => { goTo(current + 1); resetTimer(); });
+
+  // Appliquer la transition css pour le fondu texte
+  if (tagEl)   tagEl.style.transition   = 'opacity 0.38s ease';
+  if (titleEl) titleEl.style.transition = 'opacity 0.38s ease';
+  if (subEl)   subEl.style.transition   = 'opacity 0.38s ease';
+
+  startTimer();
+}
 
 /* ════════════════════════════════════════════════════════════
    SCROLL REVEAL
