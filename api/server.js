@@ -5,6 +5,9 @@ const cors    = require('cors');
 const mysql   = require('mysql2/promise');
 const bcrypt  = require('bcryptjs');
 const jwt     = require('jsonwebtoken');
+const multer  = require('multer');
+const path    = require('path');
+const fs      = require('fs');
 
 const JWT_SECRET  = process.env.JWT_SECRET || 'boncadeau_jwt_secret_change_in_prod';
 const JWT_EXPIRES = '8h';
@@ -15,6 +18,26 @@ const PORT = process.env.PORT || 3001;
 /* ─── Middlewares ────────────────────────────────────────── */
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
 app.use(express.json());
+
+/* ─── Upload images bons ─────────────────────────────────── */
+const UPLOAD_DIR = process.env.UPLOAD_DIR || '/app/uploads/bons';
+if (!fs.existsSync(UPLOAD_DIR)) fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+const bonImageStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+  filename:    (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase().replace(/[^.a-z0-9]/g, '') || '.jpg';
+    cb(null, `${req.params.id}${ext}`);
+  },
+});
+const uploadBonImage = multer({
+  storage: bonImageStorage,
+  limits:  { fileSize: 3 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (/^image\/(jpeg|png|webp)$/.test(file.mimetype)) cb(null, true);
+    else cb(new Error('Seules les images JPEG, PNG et WebP sont acceptées.'));
+  },
+});
 
 /* Logger simple */
 app.use((req, res, next) => {
@@ -86,7 +109,7 @@ app.get('/api/bons', async (req, res) => {
     const [rows] = await pool.query(
       `SELECT
          b.id, b.slug, b.titre, b.description_courte, b.prix, b.devise,
-         b.icone, b.couleur_fond, b.badge, b.note_moyenne, b.nb_avis,
+         b.icone, b.image_url, b.couleur_fond, b.badge, b.note_moyenne, b.nb_avis,
          c.slug   AS categorie_slug,
          c.nom    AS categorie_nom,
          c.icone  AS categorie_icone,
@@ -97,6 +120,7 @@ app.get('/api/bons', async (req, res) => {
        ${where}
        ORDER BY b.id
        LIMIT ? OFFSET ?`,
+
       [...params, limit, offset]
     );
 
@@ -164,11 +188,12 @@ app.get('/api/bons/:slug', async (req, res) => {
 
     // Bons similaires (même catégorie, différent slug)
     const [similaires] = await pool.query(
-      `SELECT b.id, b.slug, b.titre, b.prix, b.devise, b.icone, b.couleur_fond, b.note_moyenne, f.nom AS fournisseur_nom
+      `SELECT b.id, b.slug, b.titre, b.prix, b.devise, b.icone, b.image_url, b.couleur_fond, b.note_moyenne, f.nom AS fournisseur_nom
        FROM bons b
        JOIN fournisseurs f ON f.id = b.fournisseur_id
        WHERE b.categorie_id = ? AND b.slug != ? AND b.actif = 1
        LIMIT 3`,
+
       [bon.categorie_id, slug]
     );
 
@@ -321,7 +346,7 @@ app.get('/api/clients/commandes', requireClient, async (req, res) => {
     const [rows] = await pool.query(
       `SELECT c.id, c.reference, c.statut, c.created_at,
               c.prenom_dest, c.nom_dest, c.message,
-              b.titre AS bon_titre, b.prix, b.devise, b.icone, b.couleur_fond, b.slug AS bon_slug,
+              b.titre AS bon_titre, b.prix, b.devise, b.icone, b.image_url, b.couleur_fond, b.slug AS bon_slug,
               cat.nom AS categorie,
               f.nom AS fournisseur,
               f.adresse   AS fournisseur_adresse,
@@ -635,6 +660,31 @@ app.delete('/api/admin/bons/:id', requireAdmin, async (req, res) => {
   try {
     await pool.query('UPDATE bons SET actif = 0 WHERE id = ?', [req.params.id]);
     res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ════════════════════════════════════════════════════════════
+   ADMIN – IMAGE BON
+   POST /api/admin/bons/:id/image
+   ════════════════════════════════════════════════════════════ */
+app.post('/api/admin/bons/:id/image', requireAdmin, (req, res, next) => {
+  uploadBonImage.single('image')(req, res, err => {
+    if (err) return res.status(400).json({ error: err.message });
+    next();
+  });
+}, async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!req.file) return res.status(400).json({ error: 'Aucun fichier reçu.' });
+
+    // Supprimer l'ancienne image si différente extension
+    const ext      = path.extname(req.file.filename);
+    const imageUrl = `/assets/images/bons/${req.file.filename}`;
+
+    await pool.query('UPDATE bons SET image_url = ? WHERE id = ?', [imageUrl, id]);
+    res.json({ image_url: imageUrl });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

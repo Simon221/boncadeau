@@ -316,7 +316,24 @@ document.getElementById('btnAddBon').addEventListener('click', () => {
   document.getElementById('bonForm').reset();
   document.getElementById('bonId').value    = '';
   document.getElementById('bonActif').checked = true;
+  document.getElementById('bonImagePreview').style.display = 'none';
+  document.getElementById('bonImagePreview').src = '';
+  document.getElementById('bonImageLabel').textContent = 'Choisir une image…';
   openModal('modalBon');
+});
+
+/* Prévisualisation à la sélection d'un fichier */
+document.getElementById('bonImageFile').addEventListener('change', function () {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById('bonImagePreview');
+    preview.src           = e.target.result;
+    preview.style.display = 'block';
+    document.getElementById('bonImageLabel').textContent = file.name;
+  };
+  reader.readAsDataURL(file);
 });
 
 function openEditBon(b) {
@@ -329,8 +346,20 @@ function openEditBon(b) {
   document.getElementById('bonBadge').value       = b.badge       || '';
   document.getElementById('bonDescCourte').value  = b.description_courte || '';
   document.getElementById('bonDescLongue').value  = b.description_longue || '';
-  document.getElementById('bonIcone').value       = b.icone       || '';
-  document.getElementById('bonCouleur').value     = b.couleur_fond || '';
+  // Prévisualisation image existante
+  const preview = document.getElementById('bonImagePreview');
+  const label   = document.getElementById('bonImageLabel');
+  if (b.image_url) {
+    preview.src          = b.image_url;
+    preview.style.display = 'block';
+    label.textContent    = 'Changer l\'image…';
+  } else {
+    preview.src          = '';
+    preview.style.display = 'none';
+    label.textContent    = 'Choisir une image…';
+  }
+  document.getElementById('bonImageFile').value = '';
+  document.getElementById('bonCouleur').value   = b.couleur_fond || '';
   document.getElementById('bonActif').checked     = !!b.actif;
 
   // Select correct options
@@ -358,7 +387,7 @@ document.getElementById('btnSaveBon').addEventListener('click', async () => {
     description_longue: document.getElementById('bonDescLongue').value.trim(),
     prix:               parseFloat(document.getElementById('bonPrix').value),
     devise:             'FCFA',
-    icone:              document.getElementById('bonIcone').value.trim() || 'fa-gift',
+    icone:              'fa-gift',
     couleur_fond:       document.getElementById('bonCouleur').value.trim(),
     badge:              document.getElementById('bonBadge').value.trim() || null,
     actif:              document.getElementById('bonActif').checked,
@@ -376,13 +405,34 @@ document.getElementById('btnSaveBon').addEventListener('click', async () => {
   const res    = await apiFetch(url, { method, body: payload });
   const data   = await res.json();
 
-  if (res.ok) {
-    showToast(editingBonId ? 'Bon mis à jour avec succès.' : 'Bon créé avec succès.');
-    closeModal('modalBon');
-    loadBons();
-  } else {
+  if (!res.ok) {
     showToast(data.error || 'Erreur lors de l\'enregistrement.', 'error');
+    return;
   }
+
+  // Upload image si un fichier est sélectionné
+  const bonId    = editingBonId || data.id;
+  const imageFile = document.getElementById('bonImageFile').files[0];
+  if (imageFile) {
+    const fd = new FormData();
+    fd.append('image', imageFile);
+    const imgRes = await fetch(API + `/api/admin/bons/${bonId}/image`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    });
+    if (!imgRes.ok) {
+      const imgData = await imgRes.json();
+      showToast('Bon sauvegardé mais erreur image : ' + (imgData.error || ''), 'error');
+      closeModal('modalBon');
+      loadBons();
+      return;
+    }
+  }
+
+  showToast(editingBonId ? 'Bon mis à jour avec succès.' : 'Bon créé avec succès.');
+  closeModal('modalBon');
+  loadBons();
 });
 
 async function desactiverBon(id, actif) {

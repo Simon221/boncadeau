@@ -70,12 +70,15 @@ function buildStepper(statut) {
 /* ─── Render one order card ──────────────────────────────── */
 function renderCard(c) {
   const gradient  = c.couleur_fond || 'linear-gradient(135deg, #e8d5c4, #c9b8a8)';
+  const headerContent = c.image_url
+    ? `<img src="${escHtml(c.image_url)}" alt="${escHtml(c.bon_titre)}" class="order-card__photo" />`
+    : `<i class="fas ${escHtml(c.icone || 'fa-gift')}"></i>`;
   const canReview = c.statut === 'livre' && Number(c.a_avis) === 0;
 
   return `
     <article class="order-card">
-      <div class="order-card__header" style="background:${gradient}">
-        <i class="fas ${escHtml(c.icone || 'fa-gift')}"></i>
+      <div class="order-card__header" style="background:${c.image_url ? 'none' : gradient}">
+        ${headerContent}
         <span class="order-ref">${escHtml(c.reference)}</span>
       </div>
       <div class="order-card__body">

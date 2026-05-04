@@ -29,7 +29,8 @@ function goToDetail(card) {
    FILTRE DES CATÉGORIES
    ════════════════════════════════════════════════════════════ */
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
+  await loadBonsFromAPI();
   initFiltersAndPagination();
   initStatsCounter();
   initCharCounter();
@@ -53,6 +54,68 @@ function initReveal() {
   document.querySelectorAll('.reveal, .section-title').forEach(el => {
     observer.observe(el);
   });
+}
+
+/* ════════════════════════════════════════════════════════════
+   API – CHARGEMENT DYNAMIQUE DES BONS
+   ════════════════════════════════════════════════════════════ */
+
+const API_BASE = 'http://localhost:3001';
+
+function escHtml(str) {
+  return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function renderCardHTML(b) {
+  const bg         = b.image_url ? '#f0f0f0' : (b.couleur_fond || 'linear-gradient(135deg, #e8d5c4, #c9b8a8)');
+  const imgContent = b.image_url
+    ? `<img src="${escHtml(b.image_url)}" alt="${escHtml(b.titre)}" class="gift-card__photo" />`
+    : `<i class="fas ${escHtml(b.icone || 'fa-gift')}"></i>`;
+  const badge      = b.badge ? `<div class="gift-card__badge">${escHtml(b.badge)}</div>` : '';
+  const priceStr   = Number(b.prix).toLocaleString('fr-FR') + ' FCFA';
+
+  return `
+    <div class="gift-card" data-cat="${escHtml(b.categorie_slug)}" data-slug="${escHtml(b.slug)}" onclick="goToDetail(this)">
+      ${badge}
+      <div class="gift-card__img" style="background:${bg}">
+        ${imgContent}
+      </div>
+      <div class="gift-card__body">
+        <span class="gift-card__cat"><i class="fas ${escHtml(b.categorie_icone || 'fa-gift')}"></i> ${escHtml(b.categorie_nom)}</span>
+        <div class="gift-card__providers"><span class="provider-tag"><i class="fas fa-store"></i> ${escHtml(b.fournisseur_nom)}</span></div>
+        <h3>${escHtml(b.titre)}</h3>
+        <p>${escHtml(b.description_courte)}</p>
+        <div class="gift-card__footer">
+          <span class="gift-card__price">${Number(b.prix).toLocaleString('fr-FR')} <small>FCFA</small></span>
+          <button class="btn btn--gold btn--sm" onclick="event.stopPropagation(); openOrder(this)"
+            data-title="${escHtml(b.titre)}"
+            data-price="${escHtml(priceStr)}"
+            data-cat="${escHtml(b.categorie_nom)}"
+            data-icon="${escHtml(b.icone || 'fa-gift')}"
+            data-provider="${escHtml(b.fournisseur_nom)}"
+            data-slug="${escHtml(b.slug)}">
+            <i class="fas fa-shopping-bag"></i> Commander
+          </button>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function loadBonsFromAPI() {
+  const grid = document.getElementById('cardsGrid');
+  try {
+    const res  = await fetch(API_BASE + '/api/bons?limit=100');
+    if (!res.ok) throw new Error('Erreur ' + res.status);
+    const { data } = await res.json();
+    if (!data || !data.length) {
+      grid.innerHTML = '<p class="catalogue-empty"><i class="fas fa-box-open"></i> Aucun bon disponible pour le moment.</p>';
+      return;
+    }
+    grid.innerHTML = data.map(renderCardHTML).join('');
+  } catch (err) {
+    console.error('Catalogue API error:', err);
+    grid.innerHTML = '<p class="catalogue-empty"><i class="fas fa-exclamation-triangle"></i> Impossible de charger le catalogue.</p>';
+  }
 }
 
 /* ════════════════════════════════════════════════════════════

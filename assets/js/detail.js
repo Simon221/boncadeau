@@ -59,9 +59,25 @@ function renderBon(bon) {
   /* Carte visuelle */
   const visualCard = qs('#visualCard');
   if (visualCard) {
-    visualCard.style.background = bon.couleur_fond || 'linear-gradient(135deg, #e8d5c4, #c9b8a8)';
-    const icon = visualCard.querySelector('i');
-    if (icon) icon.className = 'fas ' + (bon.icone || 'fa-gift');
+    if (bon.image_url) {
+      visualCard.style.background = 'none';
+      const existing = visualCard.querySelector('img.bon-photo');
+      if (!existing) {
+        const img = document.createElement('img');
+        img.className = 'bon-photo';
+        img.src = bon.image_url;
+        img.alt = bon.titre;
+        visualCard.insertBefore(img, visualCard.firstChild);
+      } else {
+        existing.src = bon.image_url;
+      }
+      const icon = visualCard.querySelector('i');
+      if (icon) icon.style.display = 'none';
+    } else {
+      visualCard.style.background = bon.couleur_fond || 'linear-gradient(135deg, #e8d5c4, #c9b8a8)';
+      const icon = visualCard.querySelector('i');
+      if (icon) { icon.className = 'fas ' + (bon.icone || 'fa-gift'); icon.style.display = ''; }
+    }
   }
 
   const badge = qs('#visualBadge');
@@ -179,10 +195,14 @@ function renderSimilaires(similaires) {
     return;
   }
 
-  grid.innerHTML = similaires.map(s => `
+  grid.innerHTML = similaires.map(s => {
+    const imgContent = s.image_url
+      ? `<img src="${s.image_url}" alt="${s.titre}" class="gift-card__photo" />`
+      : `<i class="fas ${s.icone || 'fa-gift'}"></i>`;
+    return `
     <div class="gift-card" data-slug="${s.slug}" onclick="goToDetail(this)" style="cursor:pointer;">
-      <div class="gift-card__img" style="background: ${s.couleur_fond || 'linear-gradient(135deg, #e8d5c4, #c9b8a8)'}">
-        <i class="fas ${s.icone || 'fa-gift'}"></i>
+      <div class="gift-card__img" style="background: ${s.image_url ? '#f5f5f5' : (s.couleur_fond || 'linear-gradient(135deg, #e8d5c4, #c9b8a8)')}">
+        ${imgContent}
       </div>
       <div class="gift-card__body">
         <span class="gift-card__cat"><i class="fas ${s.icone || 'fa-gift'}"></i> ${s.categorie_nom || ''}</span>
@@ -204,7 +224,8 @@ function renderSimilaires(similaires) {
         </div>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 /* ─── Navigation vers détail (utilisée aussi pour similaires) */

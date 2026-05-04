@@ -239,11 +239,18 @@
               <textarea id="bonDescLongue" rows="4" placeholder="Description complète affichée sur la page détail…"></textarea>
             </div>
             <div class="form-group">
-              <label>Icône Font Awesome</label>
-              <input type="text" id="bonIcone" placeholder="fa-spa" />
+              <label>Image du bon <small>(JPEG / PNG / WebP, max 3 Mo)</small></label>
+              <div class="image-upload-wrap" id="bonImageWrap">
+                <img id="bonImagePreview" src="" alt="" style="display:none" />
+                <label class="image-upload-btn" for="bonImageFile">
+                  <i class="fas fa-cloud-upload-alt"></i>
+                  <span id="bonImageLabel">Choisir une image…</span>
+                </label>
+                <input type="file" id="bonImageFile" accept="image/jpeg,image/png,image/webp" style="display:none" />
+              </div>
             </div>
             <div class="form-group">
-              <label>Dégradé de couleur</label>
+              <label>Dégradé de couleur <small>(affiché si pas d'image)</small></label>
               <input type="text" id="bonCouleur" placeholder="linear-gradient(135deg,#e8d5c4,#c9b8a8)" />
             </div>
             <div class="form-group col-2">

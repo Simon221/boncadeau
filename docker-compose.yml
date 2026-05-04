@@ -39,6 +39,8 @@ services:
       PORT: 3001
       CORS_ORIGIN: "*"
       JWT_SECRET: "boncadeau_super_secret_jwt_change_in_production"
+    volumes:
+      - ./assets/images/bons:/app/uploads/bons
     depends_on:
       db:
         condition: service_healthy
