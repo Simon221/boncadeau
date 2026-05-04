@@ -766,19 +766,25 @@ app.get('/api/admin/utilisateurs', requireAdmin, async (req, res) => {
 });
 
 /* ════════════════════════════════════════════════════════════
-   GET /api/admin/clients-actifs — Inscrits ayant commandé
+   GET /api/admin/clients-actifs — Tous les acheteurs (avec ou sans compte)
    ════════════════════════════════════════════════════════════ */
 app.get('/api/admin/clients-actifs', requireAdmin, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      `SELECT c.id, c.prenom, c.nom, c.email, c.telephone, c.created_at,
-              COUNT(cmd.id)   AS nb_commandes,
-              SUM(b.prix)     AS total_depense,
-              MAX(cmd.created_at) AS derniere_commande
-       FROM clients c
-       INNER JOIN commandes cmd ON cmd.email_acheteur = c.email
-       INNER JOIN bons b ON b.id = cmd.bon_id
-       GROUP BY c.id
+      `SELECT
+         cmd.email_acheteur                              AS email,
+         MAX(cmd.prenom_acheteur)                        AS prenom,
+         MAX(cmd.nom_acheteur)                           AS nom,
+         MAX(cmd.tel_acheteur)                           AS telephone,
+         COUNT(cmd.id)                                   AS nb_commandes,
+         SUM(b.prix)                                     AS total_depense,
+         MAX(cmd.created_at)                             AS derniere_commande,
+         MIN(c.created_at)                               AS compte_cree_le,
+         IF(COUNT(c.id) > 0, 1, 0)                      AS a_un_compte
+       FROM commandes cmd
+       JOIN bons b ON b.id = cmd.bon_id
+       LEFT JOIN clients c ON c.email = cmd.email_acheteur
+       GROUP BY cmd.email_acheteur
        ORDER BY derniere_commande DESC`
     );
     res.json(rows);

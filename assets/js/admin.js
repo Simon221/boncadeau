@@ -514,13 +514,18 @@ function renderClients(data) {
   }
   tbody.innerHTML = data.map(c => `
     <tr>
-      <td><strong>${escHtml(c.prenom)} ${escHtml(c.nom)}</strong></td>
+      <td>
+        <strong>${escHtml(c.prenom)} ${escHtml(c.nom)}</strong>
+        ${c.a_un_compte
+          ? '<span class="badge badge--blue" style="margin-left:6px;font-size:.65rem">Compte</span>'
+          : '<span style="margin-left:6px;font-size:.72rem;color:var(--text-muted)">Invité</span>'}
+      </td>
       <td>${escHtml(c.email)}</td>
       <td>${c.telephone ? escHtml(c.telephone) : '<span class="text-muted">—</span>'}</td>
       <td><span class="badge badge--blue">${c.nb_commandes}</span></td>
       <td>${c.total_depense ? fmtNum(c.total_depense) + ' FCFA' : '—'}</td>
       <td>${fmtDate(c.derniere_commande)}</td>
-      <td>${fmtDate(c.created_at)}</td>
+      <td>${c.compte_cree_le ? fmtDate(c.compte_cree_le) : '<span class="text-muted">—</span>'}</td>
     </tr>`).join('');
 }
 
