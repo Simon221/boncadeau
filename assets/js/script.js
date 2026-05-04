@@ -125,10 +125,10 @@ async function loadBonsFromAPI() {
 const CARDS_PER_PAGE = 6;
 let currentPage     = 1;
 let activeCat       = 'all';
+let searchQuery     = '';
 
 function initFiltersAndPagination() {
   const filterBtns = document.querySelectorAll('.filter-btn');
-
   filterBtns.forEach(btn => {
     btn.addEventListener('click', function () {
       filterBtns.forEach(b => b.classList.remove('active'));
@@ -139,14 +139,39 @@ function initFiltersAndPagination() {
     });
   });
 
+  /* Recherche */
+  const searchInput = document.getElementById('catalogueSearch');
+  const clearBtn    = document.getElementById('searchClear');
+  if (searchInput) {
+    searchInput.addEventListener('input', function () {
+      searchQuery = this.value.trim().toLowerCase();
+      clearBtn.style.display = searchQuery ? 'block' : 'none';
+      currentPage = 1;
+      renderPage();
+    });
+  }
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      searchInput.value  = '';
+      searchQuery        = '';
+      clearBtn.style.display = 'none';
+      currentPage = 1;
+      renderPage();
+      searchInput.focus();
+    });
+  }
+
   renderPage();
 }
 
-/* ─── Filtrer les cartes selon la catégorie active ─────── */
+/* ─── Filtrer les cartes selon la catégorie active et la recherche ─ */
 function getVisibleCards() {
   const all = Array.from(document.querySelectorAll('.gift-card'));
-  if (activeCat === 'all') return all;
-  return all.filter(c => c.dataset.cat === activeCat);
+  return all.filter(c => {
+    const catOk    = activeCat === 'all' || c.dataset.cat === activeCat;
+    const searchOk = !searchQuery || c.textContent.toLowerCase().includes(searchQuery);
+    return catOk && searchOk;
+  });
 }
 
 /* ─── Afficher la page courante ──────────────────────────── */
