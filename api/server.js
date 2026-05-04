@@ -342,6 +342,24 @@ app.get('/api/clients/commandes', requireClient, async (req, res) => {
   }
 });
 
+/* PATCH /api/clients/commandes/:id/annuler */
+app.patch('/api/clients/commandes/:id/annuler', requireClient, async (req, res) => {
+  try {
+    const [[commande]] = await pool.query(
+      'SELECT id, statut FROM commandes WHERE id = ? AND client_id = ?',
+      [req.params.id, req.client.id]
+    );
+    if (!commande) return res.status(404).json({ error: 'Commande introuvable.' });
+    if (commande.statut !== 'en_attente') {
+      return res.status(400).json({ error: 'Seules les commandes en attente peuvent être annulées.' });
+    }
+    await pool.query('UPDATE commandes SET statut = ? WHERE id = ?', ['annulee', req.params.id]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /* POST /api/clients/avis */
 app.post('/api/clients/avis', requireClient, async (req, res) => {
   try {

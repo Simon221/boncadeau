@@ -101,9 +101,48 @@ function renderCard(c) {
             </button>` : ''}
           ${Number(c.a_avis) > 0 ? `
             <p class="avis-done"><i class="fas fa-check-circle"></i> Avis publié — merci !</p>` : ''}
+          ${c.statut === 'en_attente' ? `
+            <button class="btn-cancel" onclick="confirmCancel(${c.id}, '${escHtml(c.reference)}')">
+              <i class="fas fa-times-circle"></i> Annuler la commande
+            </button>` : ''}
         </div>
       </div>
     </article>`;
+}
+
+/* ─── Annulation commande ───────────────────────────────────────── */
+function confirmCancel(commandeId, reference) {
+  document.getElementById('cancelRef').textContent = reference;
+  document.getElementById('cancelOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('btnCancelConfirm').onclick = () => cancelOrder(commandeId);
+}
+
+function closeCancelModal() {
+  document.getElementById('cancelOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+async function cancelOrder(commandeId) {
+  const btn  = document.getElementById('btnCancelConfirm');
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  try {
+    const res = await fetch(API + '/api/clients/commandes/' + commandeId + '/annuler', {
+      method : 'PATCH',
+      headers: { Authorization: 'Bearer ' + token }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erreur lors de l’annulation.');
+    closeCancelModal();
+    await loadOrders();
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = orig;
+  }
 }
 
 /* ─── Load orders ────────────────────────────────────────── */

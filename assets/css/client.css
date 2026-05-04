@@ -519,8 +519,56 @@ a { text-decoration: none; color: inherit; }
 }
 
 /* ══════════════════════════════════════════════════════════
-   MODAL AVIS
-   ══════════════════════════════════════════════════════════ */
+   MODAL ANNULATION
+   ════════════════════════════════════════════════════════ */
+.cancel-modal {
+  background: var(--white);
+  border-radius: 16px;
+  padding: 36px 32px 28px;
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+  animation: fadeUp .25s ease;
+}
+.cancel-icon {
+  width: 56px;
+  height: 56px;
+  background: #fff3f3;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 1.5rem;
+  color: var(--red);
+}
+.cancel-modal h3 { font-family: var(--font-serif); font-size: 1.2rem; margin-bottom: 10px; color: var(--text-dark); }
+.cancel-modal p  { font-size: .92rem; color: var(--text-light); line-height: 1.6; margin-bottom: 24px; }
+.cancel-modal p strong { color: var(--text-dark); }
+.cancel-actions { display: flex; gap: 10px; }
+.cancel-actions button {
+  flex: 1;
+  padding: 11px;
+  border-radius: 9px;
+  border: none;
+  font-family: 'Lato', sans-serif;
+  font-size: .9rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: opacity .2s;
+}
+.cancel-actions button:hover:not(:disabled) { opacity: .85; }
+.cancel-actions button:disabled { opacity: .6; cursor: not-allowed; }
+.btn-cancel-back    { background: #f2f2f2; color: var(--text); }
+.btn-cancel-confirm { background: var(--red); color: #fff; }
+
+/* ════════════════════════════════════════════════════════
+   MODALS
+   ════════════════════════════════════════════════════════ */
 
 .modal-overlay {
   position: fixed;
@@ -673,6 +721,25 @@ a { text-decoration: none; color: inherit; }
   transition: background .2s, color .2s;
 }
 .btn-voucher:hover { background: var(--gold); color: #fff; }
+
+.btn-cancel {
+  width: 100%;
+  padding: 9px;
+  background: transparent;
+  border: 1.5px solid var(--red);
+  color: var(--red);
+  border-radius: 8px;
+  font-family: 'Lato', sans-serif;
+  font-size: .88rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background .2s, color .2s;
+}
+.btn-cancel:hover { background: var(--red); color: #fff; }
 
 /* ══════════════════════════════════════════════════════════
    MODAL — Voucher overlay
