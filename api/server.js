@@ -1,13 +1,14 @@
 'use strict';
 
-const express = require('express');
-const cors    = require('cors');
-const mysql   = require('mysql2/promise');
-const bcrypt  = require('bcryptjs');
-const jwt     = require('jsonwebtoken');
-const multer  = require('multer');
-const path    = require('path');
-const fs      = require('fs');
+const express    = require('express');
+const cors       = require('cors');
+const mysql      = require('mysql2/promise');
+const bcrypt     = require('bcryptjs');
+const jwt        = require('jsonwebtoken');
+const multer     = require('multer');
+const path       = require('path');
+const fs         = require('fs');
+const nodemailer = require('nodemailer');
 
 const JWT_SECRET  = process.env.JWT_SECRET || 'boncadeau_jwt_secret_change_in_prod';
 const JWT_EXPIRES = '8h';
@@ -58,6 +59,133 @@ const pool = mysql.createPool({
   connectionLimit:    10,
   queueLimit:         0,
 });
+
+/* ─── Transporteur Email (Nodemailer) ────────────────────── */
+const mailer = nodemailer.createTransport({
+  host:   process.env.SMTP_HOST || 'smtp.gmail.com',
+  port:   parseInt(process.env.SMTP_PORT) || 587,
+  secure: process.env.SMTP_SECURE === 'true',
+  auth: {
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+  },
+});
+
+const APP_URL   = process.env.APP_URL || 'http://localhost:8080';
+const EMAIL_FROM = process.env.EMAIL_FROM || 'BonCadeau <no-reply@boncadeau.sn>';
+
+/* Formater le montant */
+function formatMontant(prix, devise) {
+  return `${Number(prix).toLocaleString('fr-FR')} ${devise || 'FCFA'}`;
+}
+
+/* Construire et envoyer l'email de notification de statut */
+async function envoyerEmailStatut(commande) {
+  if (!commande.email_acheteur) return;
+
+  const statutLabels = {
+    confirmee: { label: 'Confirmée ✅', couleur: '#16a34a', intro: 'Bonne nouvelle ! Votre commande a été <strong>confirmée</strong>.' },
+    livre:     { label: 'Livrée 🎁',    couleur: '#2563eb', intro: 'Votre bon cadeau a été <strong>livré</strong> avec succès.' },
+    annulee:   { label: 'Annulée ❌',   couleur: '#dc2626', intro: 'Votre commande a été <strong>annulée</strong>.' },
+  };
+
+  const info = statutLabels[commande.statut];
+  if (!info) return; // ne pas envoyer pour "en_attente"
+
+  const destLine = commande.prenom_dest
+    ? `<tr><td style="padding:6px 0;color:#6b7280;">Destinataire</td><td style="padding:6px 0;font-weight:600;">${commande.prenom_dest} ${commande.nom_dest || ''}</td></tr>`
+    : '';
+
+  const messageLine = commande.message
+    ? `<tr><td style="padding:6px 0;color:#6b7280;">Message</td><td style="padding:6px 0;font-style:italic;">"${commande.message}"</td></tr>`
+    : '';
+
+  const fournisseurSection = (commande.statut === 'confirmee' || commande.statut === 'livre') && commande.fournisseur_nom ? `
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin-top:20px;">
+      <p style="margin:0 0 8px;font-weight:700;color:#166534;">📍 Où utiliser votre bon cadeau</p>
+      <p style="margin:0;color:#15803d;font-weight:600;">${commande.fournisseur_nom}</p>
+      ${commande.fournisseur_adresse ? `<p style="margin:4px 0 0;color:#166534;">📌 ${commande.fournisseur_adresse}</p>` : ''}
+      ${commande.fournisseur_telephone ? `<p style="margin:4px 0 0;color:#166534;">📞 ${commande.fournisseur_telephone}</p>` : ''}
+      ${commande.fournisseur_email ? `<p style="margin:4px 0 0;color:#166534;">✉️ ${commande.fournisseur_email}</p>` : ''}
+    </div>` : '';
+
+  const html = `<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f3f4f6;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:30px 0;">
+    <tr><td align="center">
+      <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">
+        <!-- En-tête -->
+        <tr><td style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);padding:32px 40px;text-align:center;">
+          <h1 style="margin:0;color:#fff;font-size:28px;letter-spacing:1px;">🎁 BonCadeau</h1>
+          <p style="margin:8px 0 0;color:rgba(255,255,255,.85);font-size:14px;">Votre plateforme de bons cadeaux</p>
+        </td></tr>
+        <!-- Badge statut -->
+        <tr><td style="padding:24px 40px 0;text-align:center;">
+          <span style="display:inline-block;background:${info.couleur};color:#fff;padding:8px 22px;border-radius:999px;font-size:15px;font-weight:700;">
+            Commande ${info.label}
+          </span>
+        </td></tr>
+        <!-- Corps -->
+        <tr><td style="padding:24px 40px;">
+          <p style="margin:0 0 16px;font-size:16px;color:#374151;">Bonjour <strong>${commande.prenom_acheteur} ${commande.nom_acheteur}</strong>,</p>
+          <p style="margin:0 0 24px;font-size:15px;color:#374151;">${info.intro}</p>
+
+          <!-- Détails commande -->
+          <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:20px;margin-bottom:8px;">
+            <p style="margin:0 0 12px;font-weight:700;color:#1f2937;font-size:15px;">📋 Détails de la commande</p>
+            <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#374151;">
+              <tr>
+                <td style="padding:6px 0;color:#6b7280;width:45%;">Référence</td>
+                <td style="padding:6px 0;font-weight:700;color:#7c3aed;">${commande.reference}</td>
+              </tr>
+              <tr>
+                <td style="padding:6px 0;color:#6b7280;">Bon cadeau</td>
+                <td style="padding:6px 0;font-weight:600;">${commande.bon_titre}</td>
+              </tr>
+              <tr>
+                <td style="padding:6px 0;color:#6b7280;">Montant</td>
+                <td style="padding:6px 0;font-weight:700;color:#059669;">${formatMontant(commande.prix, commande.devise)}</td>
+              </tr>
+              ${destLine}
+              ${messageLine}
+              <tr>
+                <td style="padding:6px 0;color:#6b7280;">Statut</td>
+                <td style="padding:6px 0;font-weight:700;color:${info.couleur};">${info.label}</td>
+              </tr>
+            </table>
+          </div>
+
+          ${fournisseurSection}
+
+          <div style="text-align:center;margin-top:28px;">
+            <a href="${APP_URL}/pages/client-dashboard.html"
+               style="display:inline-block;background:#7c3aed;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:700;font-size:15px;">
+              Voir mes commandes
+            </a>
+          </div>
+        </td></tr>
+        <!-- Pied -->
+        <tr><td style="background:#f9fafb;padding:20px 40px;text-align:center;border-top:1px solid #e5e7eb;">
+          <p style="margin:0;color:#9ca3af;font-size:12px;">
+            © ${new Date().getFullYear()} BonCadeau · Tous droits réservés<br>
+            Cet email a été envoyé automatiquement, merci de ne pas y répondre.
+          </p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  await mailer.sendMail({
+    from:    EMAIL_FROM,
+    to:      commande.email_acheteur,
+    subject: `[BonCadeau] Votre commande ${commande.reference} – ${info.label}`,
+    html,
+  });
+}
 
 /* ─── Vérification DB ────────────────────────────────────── */
 app.get('/health', async (req, res) => {
@@ -379,6 +507,29 @@ app.patch('/api/clients/commandes/:id/annuler', requireClient, async (req, res) 
       return res.status(400).json({ error: 'Seules les commandes en attente peuvent être annulées.' });
     }
     await pool.query('UPDATE commandes SET statut = ? WHERE id = ?', ['annulee', req.params.id]);
+
+    // Envoyer l'email de notification annulation
+    try {
+      const [[cmd]] = await pool.query(
+        `SELECT c.reference, c.prenom_acheteur, c.nom_acheteur, c.email_acheteur,
+                c.prenom_dest, c.nom_dest, c.message,
+                b.titre AS bon_titre, b.prix, b.devise,
+                f.nom AS fournisseur_nom, f.adresse AS fournisseur_adresse,
+                f.telephone AS fournisseur_telephone, f.email AS fournisseur_email
+         FROM commandes c
+         JOIN bons b ON b.id = c.bon_id
+         JOIN fournisseurs f ON f.id = b.fournisseur_id
+         WHERE c.id = ?`,
+        [req.params.id]
+      );
+      if (cmd) {
+        cmd.statut = 'annulee';
+        await envoyerEmailStatut(cmd);
+      }
+    } catch (emailErr) {
+      console.error('[Email] Erreur envoi notification annulation :', emailErr.message);
+    }
+
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -539,6 +690,31 @@ app.patch('/api/admin/commandes/:id/statut', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'Statut invalide.' });
     }
     await pool.query('UPDATE commandes SET statut = ? WHERE id = ?', [statut, req.params.id]);
+
+    // Envoyer un email si le statut déclenche une notification
+    if (['confirmee','livre','annulee'].includes(statut)) {
+      try {
+        const [[cmd]] = await pool.query(
+          `SELECT c.reference, c.statut, c.prenom_acheteur, c.nom_acheteur, c.email_acheteur,
+                  c.prenom_dest, c.nom_dest, c.message,
+                  b.titre AS bon_titre, b.prix, b.devise,
+                  f.nom AS fournisseur_nom, f.adresse AS fournisseur_adresse,
+                  f.telephone AS fournisseur_telephone, f.email AS fournisseur_email
+           FROM commandes c
+           JOIN bons b ON b.id = c.bon_id
+           JOIN fournisseurs f ON f.id = b.fournisseur_id
+           WHERE c.id = ?`,
+          [req.params.id]
+        );
+        if (cmd) {
+          cmd.statut = statut;
+          await envoyerEmailStatut(cmd);
+        }
+      } catch (emailErr) {
+        console.error('[Email] Erreur envoi notification statut :', emailErr.message);
+      }
+    }
+
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

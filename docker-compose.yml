@@ -39,6 +39,14 @@ services:
       PORT: 3001
       CORS_ORIGIN: "*"
       JWT_SECRET: "boncadeau_super_secret_jwt_change_in_production"
+      # ─── Configuration SMTP (email) ───────────────────────
+      SMTP_HOST: "smtp.gmail.com"
+      SMTP_PORT: "587"
+      SMTP_SECURE: "false"
+      SMTP_USER: "vtsen221@gmail.com"
+      SMTP_PASS: "zbzmjjdzmexfxxpm"
+      EMAIL_FROM: "BonCadeau SN <vtsen221@gmail.com>"
+      APP_URL: "http://localhost:8080"
     volumes:
       - ./assets/images/bons:/app/uploads/bons
     depends_on:

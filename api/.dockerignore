@@ -1,0 +1,5 @@
+node_modules
+node_modules_from_image
+npm-debug.log
+.env
+*.md

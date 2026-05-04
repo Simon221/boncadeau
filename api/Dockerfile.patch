@@ -1,0 +1,4 @@
+FROM boncadeau-api:latest
+WORKDIR /app
+RUN npm install multer nodemailer --no-audit --no-fund
+COPY server.js ./
