@@ -307,8 +307,12 @@ app.post('/api/clients/login', async (req, res) => {
 });
 
 /* GET /api/clients/me */
-app.get('/api/clients/me', requireClient, (req, res) => {
-  res.json({ prenom: req.client.prenom, nom: req.client.nom, email: req.client.email });
+app.get('/api/clients/me', requireClient, async (req, res) => {
+  try {
+    const [[row]] = await pool.query('SELECT prenom, nom, email, telephone FROM clients WHERE id = ?', [req.client.id]);
+    if (!row) return res.status(404).json({ error: 'Client introuvable' });
+    res.json(row);
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 /* GET /api/clients/commandes */

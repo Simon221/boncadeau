@@ -55,6 +55,24 @@ function openOrder(button) {
   }
   const charCounter = document.getElementById('charCount');
   if (charCounter) charCounter.textContent = '0';
+
+  /* Préremplir avec les infos du client connecté */
+  const clientToken = localStorage.getItem('client_token');
+  if (clientToken) {
+    fetch('http://localhost:3001/api/clients/me', {
+      headers: { 'Authorization': 'Bearer ' + clientToken }
+    })
+    .then(r => r.ok ? r.json() : null)
+    .then(data => {
+      if (!data) return;
+      const set = (id, val) => { const el = document.getElementById(id); if (el && val) { el.value = val; validateField(el); } };
+      set('prenomAcheteur', data.prenom);
+      set('nomAcheteur',    data.nom);
+      set('emailAcheteur',  data.email);
+      set('telAcheteur',    data.telephone);
+    })
+    .catch(() => {});
+  }
 }
 
 /* ─── Fermer la modale de commande ─────────────────────── */
