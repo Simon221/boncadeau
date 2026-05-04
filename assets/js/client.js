@@ -75,6 +75,8 @@ function renderCard(c) {
     : `<i class="fas ${escHtml(c.icone || 'fa-gift')}"></i>`;
   const canReview = c.statut === 'livre' && Number(c.a_avis) === 0;
 
+  const pageUrl = window.location.origin + '/pages/commande.html?ref=' + encodeURIComponent(c.reference);
+
   return `
     <article class="order-card">
       <div class="order-card__header" style="background:${c.image_url ? 'none' : gradient}">
@@ -97,7 +99,10 @@ function renderCard(c) {
           ${(c.statut === 'confirmee' || c.statut === 'livre') ? `
             <button class="btn-voucher" onclick="openVoucher(${c.id})">
               <i class="fas fa-ticket-alt"></i> Mon bon cadeau
-            </button>` : ''}
+            </button>
+            <a class="btn-share" href="${escHtml(pageUrl)}" target="_blank">
+              <i class="fas fa-share-alt"></i> Partager
+            </a>` : ''}
           ${canReview ? `
             <button class="btn-review" data-bon-title="${escHtml(c.bon_titre)}" onclick="openAvis(${c.id}, this.getAttribute('data-bon-title'))">
               <i class="fas fa-star"></i> Écrire un avis
@@ -292,7 +297,7 @@ function openVoucher(id) {
   const qrContainer = document.getElementById('voucherQR');
   qrContainer.innerHTML = '';
   new QRCode(qrContainer, {
-    text: 'https://boncadeau.sn/verify/' + encodeURIComponent(c.reference),
+    text: window.location.origin + '/pages/commande.html?ref=' + encodeURIComponent(c.reference),
     width: 80, height: 80,
     colorDark: '#8B6914', colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.H
@@ -347,9 +352,10 @@ async function shareVoucherWhatsApp() {
         }
       }
       // Fallback : lien WhatsApp avec texte
+      const pageUrl = window.location.origin + '/pages/commande.html?ref=' + encodeURIComponent(ref);
       const text = encodeURIComponent(
-        '🎁 *Mon bon cadeau BonCadeau.sn*\nRéférence : ' + ref +
-        '\nhttps://boncadeau.sn/verify/' + encodeURIComponent(ref)
+        '🎁 *Mon bon cadeau BonCadeau.sn*\nRéférence : ' + ref +
+        '\n' + pageUrl
       );
       window.open('https://api.whatsapp.com/send?text=' + text, '_blank');
     });

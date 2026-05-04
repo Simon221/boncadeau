@@ -969,6 +969,46 @@ app.get('/api/admin/clients-actifs', requireAdmin, async (req, res) => {
   }
 });
 
+/* ════════════════════════════════════════════════════════════
+   GET /api/commandes/:reference  (public — page de partage)
+   Retourne uniquement les infos affichables publiquement.
+   ════════════════════════════════════════════════════════════ */
+app.get('/api/commandes/:reference', async (req, res) => {
+  try {
+    const { reference } = req.params;
+    // Validation : seuls les caractères de référence BonCadeau
+    if (!/^BC-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(reference)) {
+      return res.status(400).json({ error: 'Référence invalide.' });
+    }
+
+    const [[row]] = await pool.query(
+      `SELECT
+         c.reference, c.statut, c.created_at,
+         c.prenom_dest, c.nom_dest, c.message,
+         b.titre  AS bon_titre,
+         b.prix, b.devise,
+         b.icone, b.image_url, b.couleur_fond,
+         cat.nom  AS categorie,
+         f.nom    AS fournisseur,
+         f.adresse     AS fournisseur_adresse,
+         f.telephone   AS fournisseur_telephone,
+         f.email       AS fournisseur_email,
+         f.site_web    AS fournisseur_site
+       FROM commandes c
+       JOIN bons         b   ON b.id   = c.bon_id
+       JOIN categories   cat ON cat.id = b.categorie_id
+       JOIN fournisseurs f   ON f.id   = b.fournisseur_id
+       WHERE c.reference = ?`,
+      [reference]
+    );
+
+    if (!row) return res.status(404).json({ error: 'Commande introuvable.' });
+    res.json(row);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /* ─── Démarrage ──────────────────────────────────────────── */
 app.listen(PORT, () => {
   console.log(`✅  BonCadeau API démarrée sur http://localhost:${PORT}`);

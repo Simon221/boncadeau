@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BonCadeau — Détail de commande</title>
+  <!-- Open Graph pour aperçu WhatsApp / réseaux sociaux -->
+  <meta property="og:title"       content="Mon Bon Cadeau — BonCadeau.sn" />
+  <meta property="og:description" content="Découvrez ce bon cadeau offert via BonCadeau.sn" />
+  <meta property="og:image"       content="../assets/images/logo/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --gold:       #BF9A5E;
+      --gold-light: #D4B07C;
+      --gold-dark:  #8C6B35;
+      --bg:         #F4F1EC;
+      --white:      #FFFFFF;
+      --text:       #2B2B2B;
+      --muted:      #6B6056;
+      --border:     #E2D4B8;
+      --green:      #27ae60;
+      --orange:     #e67e22;
+      --blue:       #1a6fa8;
+      --red:        #c0392b;
+    }
+    html, body { font-family: 'Lato', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    a { text-decoration: none; color: inherit; }
+
+    /* ── Topbar ── */
+    .topbar {
+      background: #1a1209;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 24px;
+    }
+    .topbar-brand { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--gold); }
+    .topbar-brand span { color: var(--white); }
+    .topbar-back { color: #ccc; font-size: .9rem; display: flex; align-items: center; gap: 6px; transition: color .2s; }
+    .topbar-back:hover { color: var(--gold); }
+
+    /* ── Loading / Error ── */
+    .state-wrap {
+      min-height: 60vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      color: var(--muted);
+      font-size: 1.1rem;
+    }
+    .state-wrap i { font-size: 2.5rem; color: var(--gold); }
+    .state-wrap .err-icon { color: var(--red); }
+
+    /* ── Layout ── */
+    .page-wrap {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 32px 16px 64px;
+    }
+
+    /* ── Statut badge ── */
+    .statut-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .ref-label {
+      font-size: .85rem;
+      color: var(--muted);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+    .ref-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      color: var(--text);
+    }
+    .statut-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: .85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .statut-badge.en_attente  { background: #fff3cd; color: #856404; }
+    .statut-badge.confirmee   { background: #d4edda; color: #155724; }
+    .statut-badge.livre       { background: #cce5ff; color: #004085; }
+    .statut-badge.annulee     { background: #f8d7da; color: #721c24; }
+
+    /* ── Bon card ── */
+    .bon-card {
+      background: var(--white);
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .bon-header {
+      min-height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3.5rem;
+      color: rgba(255,255,255,.85);
+      position: relative;
+    }
+    .bon-header img {
+      width: 100%;
+      height: 160px;
+      object-fit: cover;
+    }
+    .bon-body { padding: 24px 28px; }
+    .bon-titre {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      margin-bottom: 6px;
+    }
+    .bon-fournisseur {
+      color: var(--muted);
+      font-size: .95rem;
+      margin-bottom: 16px;
+    }
+    .bon-fournisseur i { color: var(--gold); margin-right: 6px; }
+    .bon-price {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--gold-dark);
+      margin-bottom: 20px;
+    }
+    .bon-price small { font-size: 1rem; font-weight: 400; color: var(--muted); }
+
+    /* ── Message offert ── */
+    .message-box {
+      background: linear-gradient(135deg, #fdf6ec, #faebd7);
+      border-left: 4px solid var(--gold);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      font-style: italic;
+      color: var(--text);
+      font-size: 1rem;
+    }
+    .message-box .msg-dest {
+      font-weight: 700;
+      font-style: normal;
+      color: var(--gold-dark);
+      display: block;
+      margin-bottom: 6px;
+      font-size: .9rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+
+    /* ── Infos fournisseur ── */
+    .info-section {
+      background: var(--white);
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.08);
+      padding: 24px 28px;
+      margin-bottom: 24px;
+    }
+    .info-section h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--gold-dark);
+    }
+    .info-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: .93rem;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-row i { color: var(--gold); width: 18px; margin-top: 2px; flex-shrink: 0; }
+
+    /* ── Voucher card (printable) ── */
+    #voucherCard {
+      background: #FDFAF3;
+      border: 2px solid var(--gold);
+      border-radius: 16px;
+      overflow: hidden;
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .v-gold-bar { height: 8px; background: linear-gradient(90deg, var(--gold-dark), var(--gold-light), var(--gold-dark)); }
+    .v-body { display: flex; padding: 24px; gap: 24px; }
+    .v-left { flex: 1; display: flex; flex-direction: column; gap: 12px; }
+    .v-sep { width: 1px; background: repeating-linear-gradient(to bottom, var(--border) 0, var(--border) 6px, transparent 6px, transparent 12px); }
+    .v-right { width: 170px; display: flex; flex-direction: column; align-items: center; gap: 14px; text-align: center; }
+    .v-brand { font-family: 'Playfair Display', serif; font-size: 1.3rem; color: var(--gold-dark); letter-spacing: .1em; }
+    .v-site { font-size: .75rem; color: var(--muted); letter-spacing: .08em; }
+    .v-divider { display: flex; align-items: center; gap: 6px; }
+    .v-divider-line { flex: 1; height: 1px; background: var(--gold); }
+    .v-diamond { width: 8px; height: 8px; background: var(--gold); transform: rotate(45deg); }
+    .v-badge { background: var(--gold); color: #fff; padding: 3px 12px; border-radius: 20px; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .v-amount { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--gold-dark); line-height: 1; }
+    .v-amount-label { font-size: .7rem; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+    .v-message { font-style: italic; color: var(--text); font-size: .88rem; line-height: 1.4; }
+    .v-validity { font-size: .72rem; color: var(--muted); }
+    .v-supplier-name { font-weight: 700; font-size: .9rem; color: var(--text); }
+    .v-supplier-info { font-size: .75rem; color: var(--muted); line-height: 1.5; }
+    .v-order-box { background: #f5f0e8; border-radius: 8px; padding: 8px 12px; width: 100%; }
+    .v-order-label { font-size: .65rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .v-order-num { font-family: 'Playfair Display', serif; font-size: .95rem; color: var(--gold-dark); }
+    .v-qr-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .v-qr-frame { padding: 6px; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+    .v-qr-label { font-size: .65rem; color: var(--muted); }
+    .v-steps { display: flex; justify-content: space-around; padding: 16px 24px; border-top: 1px solid var(--border); background: #f8f4ea; }
+    .v-step { display: flex; align-items: center; gap: 8px; }
+    .v-step-num { width: 24px; height: 24px; border-radius: 50%; background: var(--gold); color: #fff; font-size: .75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .v-step-title { font-size: .78rem; font-weight: 700; color: var(--text); }
+    .v-step-sub { font-size: .68rem; color: var(--muted); }
+    .v-footer { display: flex; justify-content: space-between; padding: 10px 24px; background: var(--gold-dark); }
+    .v-footer-text, .v-footer-brand { font-size: .65rem; color: rgba(255,255,255,.75); }
+    .v-footer-brand { font-family: 'Playfair Display', serif; color: rgba(255,255,255,.9); }
+
+    /* ── Actions ── */
+    .actions-bar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn-dl {
+      flex: 1;
+      min-width: 160px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Lato', sans-serif;
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+    .btn-dl:hover { opacity: .85; }
+    .btn-dl.gold  { background: var(--gold); color: #fff; }
+    .btn-dl.wa    { background: #25D366; color: #fff; }
+    .btn-dl.copy  { background: var(--white); color: var(--text); border: 1px solid var(--border); }
+
+    /* ── Découvrir section ── */
+    .discover-cta {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 32px;
+      border-top: 1px solid var(--border);
+    }
+    .discover-cta p { color: var(--muted); margin-bottom: 14px; }
+    .btn-discover {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--gold-dark);
+      color: #fff;
+      padding: 14px 28px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: .95rem;
+      transition: background .2s;
+    }
+    .btn-discover:hover { background: var(--gold); }
+
+    .toast-copy {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: #1a1209;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: .9rem;
+      opacity: 0;
+      transition: all .3s;
+      z-index: 999;
+    }
+    .toast-copy.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    @media (max-width: 600px) {
+      .v-body { flex-direction: column; }
+      .v-sep { display: none; }
+      .v-right { width: 100%; flex-direction: row; justify-content: space-around; flex-wrap: wrap; }
+      .v-steps { flex-direction: column; gap: 8px; }
+      .bon-body { padding: 18px; }
+      .page-wrap { padding: 16px 12px 48px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Topbar ── -->
+  <header class="topbar">
+    <a href="../index.html" class="topbar-brand">Bon<span>Cadeau</span></a>
+    <a href="../index.html" class="topbar-back">
+      <i class="fas fa-arrow-left"></i> Retour au site
+    </a>
+  </header>
+
+  <!-- ── Contenu dynamique ── -->
+  <div id="stateWrap" class="state-wrap">
+    <i class="fas fa-spinner fa-spin"></i>
+    <span>Chargement de la commande…</span>
+  </div>
+
+  <div id="pageContent" class="page-wrap" style="display:none">
+
+    <!-- Référence & statut -->
+    <div class="statut-bar">
+      <div>
+        <div class="ref-label">Référence commande</div>
+        <div class="ref-value" id="refValue">—</div>
+      </div>
+      <span class="statut-badge" id="statutBadge">—</span>
+    </div>
+
+    <!-- Bon cadeau -->
+    <div class="bon-card">
+      <div class="bon-header" id="bonHeader"></div>
+      <div class="bon-body">
+        <h2 class="bon-titre" id="bonTitre">—</h2>
+        <p class="bon-fournisseur"><i class="fas fa-store"></i><span id="bonFournisseur">—</span></p>
+        <div class="bon-price"><span id="bonPrix">—</span> <small id="bonDevise"></small></div>
+
+        <!-- Message offert -->
+        <div class="message-box" id="messageBox" style="display:none">
+          <span class="msg-dest" id="msgDest"></span>
+          <span id="msgTexte"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Infos fournisseur -->
+    <div class="info-section">
+      <h3><i class="fas fa-store-alt"></i> Où utiliser ce bon ?</h3>
+      <div id="fournisseurInfos"></div>
+    </div>
+
+    <!-- Bon cadeau visuel -->
+    <div class="info-section" id="voucherSection" style="display:none">
+      <h3><i class="fas fa-ticket-alt"></i> Bon cadeau à présenter</h3>
+
+      <div id="voucherCard">
+        <div class="v-gold-bar"></div>
+        <div class="v-body">
+          <div class="v-left">
+            <div>
+              <div class="v-brand">BON CADEAU</div>
+              <div class="v-site">boncadeau.sn</div>
+            </div>
+            <div class="v-divider">
+              <div class="v-divider-line"></div>
+              <div class="v-diamond"></div>
+              <div class="v-divider-line"></div>
+            </div>
+            <div><span class="v-badge" id="v-categorie">—</span></div>
+            <div>
+              <div class="v-amount" id="v-amount">—</div>
+              <div class="v-amount-label">Valeur du bon</div>
+            </div>
+            <div class="v-message" id="v-message"></div>
+            <div class="v-validity" id="v-validity"></div>
+          </div>
+          <div class="v-sep"></div>
+          <div class="v-right">
+            <div>
+              <div class="v-supplier-name" id="v-sname"></div>
+              <div class="v-supplier-info"  id="v-sinfo"></div>
+            </div>
+            <div class="v-order-box">
+              <div class="v-order-label">N° DE COMMANDE</div>
+              <div class="v-order-num" id="v-order"></div>
+            </div>
+            <div class="v-qr-wrap">
+              <div class="v-qr-frame"><div id="voucherQR"></div></div>
+              <div class="v-qr-label">Scanner pour vérifier</div>
+            </div>
+          </div>
+        </div>
+        <div class="v-steps">
+          <div class="v-step">
+            <div class="v-step-num">1</div>
+            <div class="v-step-box"><div class="v-step-title">Présentez ce bon</div><div class="v-step-sub">chez le fournisseur</div></div>
+          </div>
+          <div class="v-step">
+            <div class="v-step-num">2</div>
+            <div class="v-step-box"><div class="v-step-title">Scannez le QR code</div><div class="v-step-sub">vérifiez l'authenticité</div></div>
+          </div>
+          <div class="v-step">
+            <div class="v-step-num">3</div>
+            <div class="v-step-box"><div class="v-step-title">Profitez !</div><div class="v-step-sub">votre expérience unique</div></div>
+          </div>
+        </div>
+        <div class="v-footer">
+          <div class="v-footer-text">Émis par boncadeau.sn · support@boncadeau.sn</div>
+          <div class="v-footer-brand">boncadeau.sn — L'art d'offrir</div>
+        </div>
+      </div>
+
+      <!-- Boutons téléchargement / partage -->
+      <div class="actions-bar">
+        <button class="btn-dl gold" id="btnDl">
+          <i class="fas fa-download"></i> Télécharger
+        </button>
+        <button class="btn-dl wa" id="btnWa">
+          <i class="fab fa-whatsapp"></i> WhatsApp
+        </button>
+        <button class="btn-dl copy" id="btnCopy">
+          <i class="fas fa-link"></i> Copier le lien
+        </button>
+      </div>
+    </div>
+
+    <!-- CTA découvrir -->
+    <div class="discover-cta">
+      <p>Envie d'offrir à votre tour ?</p>
+      <a href="../index.html" class="btn-discover">
+        <i class="fas fa-gift"></i> Découvrir nos bons cadeaux
+      </a>
+    </div>
+  </div>
+
+  <div class="toast-copy" id="toastCopy">Lien copié !</div>
+
+  <script>
+  'use strict';
+
+  function esc(str) {
+    return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function fmtNum(n) {
+    return Number(n).toLocaleString('fr-FR');
+  }
+  function fmtDate(d) {
+    return new Date(d).toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' });
+  }
+
+  const STATUT_LABELS = {
+    en_attente: { label: 'En attente',  icon: 'fa-clock',         css: 'en_attente' },
+    confirmee:  { label: 'Confirmée',   icon: 'fa-check-circle',  css: 'confirmee'  },
+    livre:      { label: 'Livré',       icon: 'fa-box-open',      css: 'livre'      },
+    annulee:    { label: 'Annulée',     icon: 'fa-times-circle',  css: 'annulee'    },
+  };
+
+  // L'URL de partage se construit à partir du domaine courant (APP_URL du .env)
+  // window.location.origin donne automatiquement le bon domaine en dev ET en prod
+  function shareUrl(ref) {
+    return window.location.origin + '/pages/commande.html?ref=' + encodeURIComponent(ref);
+  }
+
+  async function loadCommande() {
+    const params = new URLSearchParams(window.location.search);
+    const ref    = params.get('ref');
+
+    const stateEl   = document.getElementById('stateWrap');
+    const contentEl = document.getElementById('pageContent');
+
+    if (!ref) {
+      stateEl.innerHTML = '<i class="fas fa-exclamation-triangle err-icon"></i><span>Aucune référence fournie dans l\'URL.</span>';
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/commandes/' + encodeURIComponent(ref));
+      if (res.status === 404) throw new Error('Commande introuvable. Vérifiez la référence.');
+      if (!res.ok)            throw new Error('Erreur serveur (' + res.status + ').');
+      const c = await res.json();
+
+      // Titre de page dynamique
+      document.title = 'BonCadeau — ' + c.bon_titre;
+
+      // Référence & statut
+      document.getElementById('refValue').textContent = c.reference;
+      const s = STATUT_LABELS[c.statut] || { label: c.statut, icon: 'fa-question', css: 'en_attente' };
+      const badge = document.getElementById('statutBadge');
+      badge.className = 'statut-badge ' + s.css;
+      badge.innerHTML = `<i class="fas ${s.icon}"></i> ${s.label}`;
+
+      // Bon header
+      const hdr = document.getElementById('bonHeader');
+      if (c.image_url) {
+        hdr.innerHTML = `<img src="${esc(c.image_url)}" alt="${esc(c.bon_titre)}" />`;
+      } else {
+        hdr.style.background = c.couleur_fond || 'linear-gradient(135deg, #e8d5c4, #c9b8a8)';
+        hdr.innerHTML = `<i class="fas ${esc(c.icone || 'fa-gift')}"></i>`;
+      }
+
+      document.getElementById('bonTitre').textContent      = c.bon_titre;
+      document.getElementById('bonFournisseur').textContent = c.fournisseur;
+      document.getElementById('bonPrix').textContent        = fmtNum(c.prix);
+      document.getElementById('bonDevise').textContent      = c.devise;
+
+      // Message offert
+      const msgBox = document.getElementById('messageBox');
+      if (c.prenom_dest || c.message) {
+        if (c.prenom_dest) {
+          document.getElementById('msgDest').textContent =
+            'Offert à ' + c.prenom_dest + (c.nom_dest ? ' ' + c.nom_dest : '');
+        }
+        document.getElementById('msgTexte').textContent =
+          c.message ? '« ' + c.message + ' »' : '';
+        msgBox.style.display = '';
+      }
+
+      // Infos fournisseur
+      const fields = [
+        c.fournisseur_adresse  && { icon: 'fa-map-marker-alt', val: c.fournisseur_adresse },
+        c.fournisseur_telephone && { icon: 'fa-phone',          val: c.fournisseur_telephone },
+        c.fournisseur_email    && { icon: 'fa-envelope',        val: c.fournisseur_email },
+        c.fournisseur_site     && { icon: 'fa-globe',           val: c.fournisseur_site },
+      ].filter(Boolean);
+      document.getElementById('fournisseurInfos').innerHTML = fields.map(f =>
+        `<div class="info-row"><i class="fas ${f.icon}"></i><span>${esc(f.val)}</span></div>`
+      ).join('') || '<p style="color:var(--muted)">Contactez-nous pour utiliser ce bon.</p>';
+
+      // Voucher visuel uniquement pour statuts confirmée / livré
+      if (c.statut === 'confirmee' || c.statut === 'livre') {
+        document.getElementById('voucherSection').style.display = '';
+
+        const exp = new Date(c.created_at);
+        exp.setFullYear(exp.getFullYear() + 1);
+        const validStr = `Valable jusqu'au ${exp.toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' })}`;
+
+        document.getElementById('v-categorie').textContent = (c.categorie || c.bon_titre).toUpperCase();
+        document.getElementById('v-amount').textContent    = fmtNum(c.prix) + ' ' + c.devise;
+        document.getElementById('v-order').textContent     = c.reference;
+        document.getElementById('v-validity').textContent  = validStr;
+        document.getElementById('v-sname').textContent     = c.fournisseur;
+
+        const parts = [c.fournisseur_adresse, c.fournisseur_telephone, c.fournisseur_email].filter(Boolean);
+        document.getElementById('v-sinfo').innerHTML = parts.map(esc).join('<br>') || '';
+
+        const dest = c.prenom_dest ? ('Offert à ' + c.prenom_dest + (c.nom_dest ? ' ' + c.nom_dest : '')) : null;
+        document.getElementById('v-message').textContent =
+          dest ? ('« ' + dest + ' »') : (c.message ? ('« ' + c.message + ' »') : '« Offrez un moment d\'exception »');
+
+        // QR Code pointant sur cette même page publique
+        const qrEl = document.getElementById('voucherQR');
+        qrEl.innerHTML = '';
+        new QRCode(qrEl, {
+          text:         shareUrl(c.reference),
+          width:        80,
+          height:       80,
+          colorDark:    '#8B6914',
+          colorLight:   '#ffffff',
+          correctLevel: QRCode.CorrectLevel.H
+        });
+
+        // Bouton télécharger
+        document.getElementById('btnDl').addEventListener('click', async () => {
+          const btn  = document.getElementById('btnDl');
+          const orig = btn.innerHTML;
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+          try {
+            const canvas = await html2canvas(document.getElementById('voucherCard'), {
+              scale: 2, backgroundColor: '#FDFAF3', useCORS: true
+            });
+            const link = document.createElement('a');
+            link.download = 'boncadeau-' + c.reference + '.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+          } finally {
+            btn.disabled = false;
+            btn.innerHTML = orig;
+          }
+        });
+
+        // Bouton WhatsApp
+        document.getElementById('btnWa').addEventListener('click', async () => {
+          const btn  = document.getElementById('btnWa');
+          const orig = btn.innerHTML;
+          btn.disabled = true;
+          btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+          try {
+            const canvas = await html2canvas(document.getElementById('voucherCard'), {
+              scale: 2, backgroundColor: '#FDFAF3', useCORS: true
+            });
+            canvas.toBlob(async blob => {
+              if (blob && navigator.canShare) {
+                const file = new File([blob], 'boncadeau-' + c.reference + '.png', { type: 'image/png' });
+                if (navigator.canShare({ files: [file] })) {
+                  try {
+                    await navigator.share({
+                      files: [file],
+                      title: 'Mon bon cadeau',
+                      text:  'BonCadeau.sn — Réf : ' + c.reference
+                    });
+                    return;
+                  } catch {}
+                }
+              }
+              // Fallback : lien WhatsApp texte
+              const text = encodeURIComponent(
+                '🎁 *Mon bon cadeau BonCadeau.sn*\n' +
+                c.bon_titre + '\nRéf : ' + c.reference + '\n' +
+                shareUrl(c.reference)
+              );
+              window.open('https://api.whatsapp.com/send?text=' + text, '_blank');
+            });
+          } finally {
+            btn.disabled = false;
+            btn.innerHTML = orig;
+          }
+        });
+      }
+
+      // Bouton copier le lien
+      document.getElementById('btnCopy').addEventListener('click', () => {
+        navigator.clipboard.writeText(shareUrl(c.reference)).then(() => {
+          const t = document.getElementById('toastCopy');
+          t.classList.add('show');
+          setTimeout(() => t.classList.remove('show'), 2500);
+        });
+      });
+
+      // Afficher la page
+      stateEl.style.display   = 'none';
+      contentEl.style.display = '';
+
+    } catch (err) {
+      stateEl.innerHTML =
+        `<i class="fas fa-exclamation-triangle err-icon"></i><span>${esc(err.message)}</span>` +
+        `<a href="../index.html" style="color:var(--gold);margin-top:8px;font-size:.9rem">← Retour à l'accueil</a>`;
+    }
+  }
+
+  loadCommande();
+  </script>
+</body>
+</html>

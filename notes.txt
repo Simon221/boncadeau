@@ -1,2 +1,8 @@
 Login : http://localhost:8080/pages/admin-login.html
 admin@boncadeau.sn|Admin2026!
+
+# whatssap mettre à jour les liens : liens vers l'app
+# dans partage whatssap, partager l'image egalement
+# page tampon pour verification des bons (lien)
+# Page pour fournisseurs
+# possibilité de faire un panier et d'avoir plusieurs bons dessus
