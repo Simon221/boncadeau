@@ -100,7 +100,7 @@ async function envoyerEmailStatut(commande) {
     ? `<tr><td style="padding:6px 0;color:#6b7280;">Message</td><td style="padding:6px 0;font-style:italic;">"${commande.message}"</td></tr>`
     : '';
 
-  const fournisseurSection = (commande.statut === 'confirmee' || commande.statut === 'livre') && commande.fournisseur_nom ? `
+  const fournisseurSection = (commande.statut === 'livre') && commande.fournisseur_nom ? `
     <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin-top:20px;">
       <p style="margin:0 0 8px;font-weight:700;color:#166534;">📍 Où utiliser votre bon cadeau</p>
       <p style="margin:0;color:#15803d;font-weight:600;">${commande.fournisseur_nom}</p>
@@ -984,6 +984,7 @@ app.get('/api/commandes/:reference', async (req, res) => {
     const [[row]] = await pool.query(
       `SELECT
          c.reference, c.statut, c.created_at,
+         c.prenom_acheteur, c.nom_acheteur,
          c.prenom_dest, c.nom_dest, c.message,
          b.titre  AS bon_titre,
          b.prix, b.devise,

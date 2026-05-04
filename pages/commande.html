@@ -538,7 +538,8 @@
       ).join('') || '<p style="color:var(--muted)">Contactez-nous pour utiliser ce bon.</p>';
 
       // Voucher visuel uniquement pour statuts confirmée / livré
-      if (c.statut === 'confirmee' || c.statut === 'livre') {
+      //if (c.statut === 'confirmee' || c.statut === 'livre') {
+      if (c.statut === 'livre') {
         document.getElementById('voucherSection').style.display = '';
 
         const exp = new Date(c.created_at);
@@ -615,12 +616,24 @@
                 }
               }
               // Fallback : lien WhatsApp texte
-              const text = encodeURIComponent(
-                '🎁 *Mon bon cadeau BonCadeau.sn*\n' +
-                c.bon_titre + '\nRéf : ' + c.reference + '\n' +
-                shareUrl(c.reference)
-              );
-              window.open('https://api.whatsapp.com/send?text=' + text, '_blank');
+              const offreur  = (c.prenom_acheteur + (c.nom_acheteur ? ' ' + c.nom_acheteur : '')).trim() || 'Quelqu\'un';
+              const destName = c.prenom_dest ? (c.prenom_dest + (c.nom_dest ? ' ' + c.nom_dest : '')) : null;
+              const bonInfo  = c.bon_titre + ' \u2014 ' + fmtNum(c.prix) + '\u202f' + c.devise + ' chez ' + c.fournisseur;
+              const msg = [
+                '\ud83c\udf81 *' + offreur + ' t\'offre un bon cadeau !*',
+                '',
+                destName ? ('\ud83c\udf80 Pour toi, ' + destName + ' !') : '\ud83c\udf80 Ce bon est fait pour toi !',
+                '',
+                '\u2728 ' + bonInfo,
+                '',
+                c.message ? ('_\u00ab ' + c.message + ' \u00bb_') : '',
+                '',
+                '\ud83d\udc49 Voir et t\u00e9l\u00e9charger ton bon cadeau :',
+                shareUrl(c.reference),
+                '',
+                '_BonCadeau.sn \u2014 L\'art d\'offrir_',
+              ].filter(l => l !== undefined).join('\n');
+              window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(msg), '_blank');
             });
           } finally {
             btn.disabled = false;

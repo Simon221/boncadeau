@@ -5,6 +5,7 @@
 
 const API = '';
 let ordersData = [];
+let currentVoucherData = null; // conserve la commande en cours d'affichage dans le voucher
 
 /* ─── Auth check ────────────────────────────────────────── */
 const token = localStorage.getItem('client_token');
@@ -96,13 +97,11 @@ function renderCard(c) {
             <i class="fas fa-quote-left"></i> ${escHtml(c.message)}
           </div>` : ''}
         <div class="order-actions">
-          ${(c.statut === 'confirmee' || c.statut === 'livre') ? `
+          ${(c.statut === 'livre') ? `
             <button class="btn-voucher" onclick="openVoucher(${c.id})">
               <i class="fas fa-ticket-alt"></i> Mon bon cadeau
             </button>
-            <a class="btn-share" href="${escHtml(pageUrl)}" target="_blank">
-              <i class="fas fa-share-alt"></i> Partager
-            </a>` : ''}
+           ` : ''}
           ${canReview ? `
             <button class="btn-review" data-bon-title="${escHtml(c.bon_titre)}" onclick="openAvis(${c.id}, this.getAttribute('data-bon-title'))">
               <i class="fas fa-star"></i> Écrire un avis
@@ -274,6 +273,7 @@ document.getElementById('avisForm').addEventListener('submit', async e => {
 function openVoucher(id) {
   const c = ordersData.find(o => o.id === id);
   if (!c) return;
+  currentVoucherData = c; // mémorisé pour shareVoucherWhatsApp
 
   // Date de validité : date d'achat + 1 an
   const exp = new Date(c.created_at);
@@ -353,11 +353,25 @@ async function shareVoucherWhatsApp() {
       }
       // Fallback : lien WhatsApp avec texte
       const pageUrl = window.location.origin + '/pages/commande.html?ref=' + encodeURIComponent(ref);
-      const text = encodeURIComponent(
-        '🎁 *Mon bon cadeau BonCadeau.sn*\nRéférence : ' + ref +
-        '\n' + pageUrl
-      );
-      window.open('https://api.whatsapp.com/send?text=' + text, '_blank');
+      const c        = currentVoucherData;
+      const offreur  = (prenom + (nom ? ' ' + nom : '')).trim() || 'Quelqu\'un';
+      const destName = c && c.prenom_dest ? (c.prenom_dest + (c.nom_dest ? ' ' + c.nom_dest : '')) : null;
+      const bonInfo  = c ? (c.bon_titre + ' — ' + fmtNum(c.prix) + '\u202f' + c.devise + ' chez ' + c.fournisseur) : '';
+      const msg = [
+        '🎁 *' + offreur + ' t\'offre un bon cadeau !*',
+        '',
+        destName ? ('🎀 Pour toi, ' + destName + ' !') : '🎀 Ce bon est fait pour toi !',
+        '',
+        '✨ ' + bonInfo,
+        '',
+        c && c.message ? ('_« ' + c.message + ' »_') : '',
+        '',
+        '👉 Voir et télécharger ton bon cadeau :',
+        pageUrl,
+        '',
+        '_BonCadeauSN.com — L\'art d\'offrir_',
+      ].filter(l => l !== undefined).join('\n');
+      window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(msg), '_blank');
     });
   } finally {
     btn.disabled = false;
