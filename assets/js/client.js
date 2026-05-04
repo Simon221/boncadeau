@@ -91,7 +91,7 @@ function renderCard(c) {
             <i class="fas fa-quote-left"></i> ${escHtml(c.message)}
           </div>` : ''}
         <div class="order-actions">
-          ${c.statut !== 'annulee' ? `
+          ${(c.statut === 'confirmee' || c.statut === 'livre') ? `
             <button class="btn-voucher" onclick="openVoucher(${c.id})">
               <i class="fas fa-ticket-alt"></i> Mon bon cadeau
             </button>` : ''}
