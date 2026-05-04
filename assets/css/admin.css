@@ -104,6 +104,17 @@ a { text-decoration: none; color: inherit; }
 }
 .nav-item .badge.visible { display: inline; }
 
+/* Badges de compteur dans les tableaux */
+.badge--blue {
+  display: inline-block;
+  background: linear-gradient(135deg, #4776E6, #8E54E9);
+  color: #fff;
+  font-size: .72rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 20px;
+}
+
 .sidebar__footer {
   padding: 16px 16px 20px;
   border-top: 1px solid rgba(255,255,255,.08);

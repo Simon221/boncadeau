@@ -746,6 +746,47 @@ app.get('/api/admin/categories', requireAdmin, async (req, res) => {
   }
 });
 
+/* ════════════════════════════════════════════════════════════
+   GET /api/admin/utilisateurs — Tous les comptes inscrits
+   ════════════════════════════════════════════════════════════ */
+app.get('/api/admin/utilisateurs', requireAdmin, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT c.id, c.prenom, c.nom, c.email, c.telephone, c.created_at,
+              COUNT(cmd.id) AS nb_commandes
+       FROM clients c
+       LEFT JOIN commandes cmd ON cmd.email_acheteur = c.email
+       GROUP BY c.id
+       ORDER BY c.created_at DESC`
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* ════════════════════════════════════════════════════════════
+   GET /api/admin/clients-actifs — Inscrits ayant commandé
+   ════════════════════════════════════════════════════════════ */
+app.get('/api/admin/clients-actifs', requireAdmin, async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      `SELECT c.id, c.prenom, c.nom, c.email, c.telephone, c.created_at,
+              COUNT(cmd.id)   AS nb_commandes,
+              SUM(b.prix)     AS total_depense,
+              MAX(cmd.created_at) AS derniere_commande
+       FROM clients c
+       INNER JOIN commandes cmd ON cmd.email_acheteur = c.email
+       INNER JOIN bons b ON b.id = cmd.bon_id
+       GROUP BY c.id
+       ORDER BY derniere_commande DESC`
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 /* ─── Démarrage ──────────────────────────────────────────── */
 app.listen(PORT, () => {
   console.log(`✅  BonCadeau API démarrée sur http://localhost:${PORT}`);

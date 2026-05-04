@@ -44,10 +44,12 @@ function showToast(msg, type = 'success') {
 
 /* ─── Navigation ─────────────────────────────────────────── */
 const sectionTitles = {
-  dashboard:    'Tableau de bord',
-  commandes:    'Commandes',
-  bons:         'Bons cadeaux',
-  fournisseurs: 'Fournisseurs',
+  dashboard:     'Tableau de bord',
+  commandes:     'Commandes',
+  bons:          'Bons cadeaux',
+  fournisseurs:  'Fournisseurs',
+  clients:       'Clients',
+  utilisateurs:  'Utilisateurs',
 };
 
 function showSection(name) {
@@ -61,6 +63,8 @@ function showSection(name) {
   if (name === 'commandes')    loadCommandes();
   if (name === 'bons')         loadBons();
   if (name === 'fournisseurs') loadFournisseurs();
+  if (name === 'clients')      loadClients();
+  if (name === 'utilisateurs') loadUtilisateurs();
 }
 
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
@@ -480,6 +484,84 @@ function slugify(str) {
    FOURNISSEURS
    ═══════════════════════════════════════════════════════════ */
 let editingFournisseurId = null;
+
+/* ════════════════════════════════════════════════════════════
+   CLIENTS (ont commandé au moins une fois)
+   ════════════════════════════════════════════════════════════ */
+let clientsData = [];
+async function loadClients() {
+  const res = await apiFetch('/api/admin/clients-actifs');
+  clientsData = await res.json();
+  renderClients(clientsData);
+
+  const input = document.getElementById('clientSearch');
+  input.value = '';
+  input.oninput = function () {
+    const q = this.value.trim().toLowerCase();
+    renderClients(q
+      ? clientsData.filter(c =>
+          `${c.prenom} ${c.nom} ${c.email}`.toLowerCase().includes(q)
+        )
+      : clientsData
+    );
+  };
+}
+function renderClients(data) {
+  const tbody = document.getElementById('clientsTbody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted)">Aucun client trouvé</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(c => `
+    <tr>
+      <td><strong>${escHtml(c.prenom)} ${escHtml(c.nom)}</strong></td>
+      <td>${escHtml(c.email)}</td>
+      <td>${c.telephone ? escHtml(c.telephone) : '<span class="text-muted">—</span>'}</td>
+      <td><span class="badge badge--blue">${c.nb_commandes}</span></td>
+      <td>${c.total_depense ? fmtNum(c.total_depense) + ' FCFA' : '—'}</td>
+      <td>${fmtDate(c.derniere_commande)}</td>
+      <td>${fmtDate(c.created_at)}</td>
+    </tr>`).join('');
+}
+
+/* ════════════════════════════════════════════════════════════
+   UTILISATEURS (tous les comptes inscrits)
+   ════════════════════════════════════════════════════════════ */
+let utilisateursData = [];
+async function loadUtilisateurs() {
+  const res = await apiFetch('/api/admin/utilisateurs');
+  utilisateursData = await res.json();
+  renderUtilisateurs(utilisateursData);
+
+  const input = document.getElementById('userSearch');
+  input.value = '';
+  input.oninput = function () {
+    const q = this.value.trim().toLowerCase();
+    renderUtilisateurs(q
+      ? utilisateursData.filter(u =>
+          `${u.prenom} ${u.nom} ${u.email}`.toLowerCase().includes(q)
+        )
+      : utilisateursData
+    );
+  };
+}
+function renderUtilisateurs(data) {
+  const tbody = document.getElementById('utilisateursTbody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--text-muted)">Aucun utilisateur trouvé</td></tr>';
+    return;
+  }
+  tbody.innerHTML = data.map(u => `
+    <tr>
+      <td><strong>${escHtml(u.prenom)} ${escHtml(u.nom)}</strong></td>
+      <td>${escHtml(u.email)}</td>
+      <td>${u.telephone ? escHtml(u.telephone) : '<span class="text-muted">—</span>'}</td>
+      <td>${u.nb_commandes > 0
+        ? `<span class="badge badge--blue">${u.nb_commandes}</span>`
+        : '<span class="text-muted">0</span>'}</td>
+      <td>${fmtDate(u.created_at)}</td>
+    </tr>`).join('');
+}
 
 async function loadFournisseurs() {
   const res  = await apiFetch('/api/admin/fournisseurs');

@@ -33,6 +33,12 @@
       <a href="#" class="nav-item" data-section="fournisseurs">
         <i class="fas fa-store"></i><span>Fournisseurs</span>
       </a>
+      <a href="#" class="nav-item" data-section="clients">
+        <i class="fas fa-user-check"></i><span>Clients</span>
+      </a>
+      <a href="#" class="nav-item" data-section="utilisateurs">
+        <i class="fas fa-users"></i><span>Utilisateurs</span>
+      </a>
     </nav>
 
     <div class="sidebar__footer">
@@ -187,6 +193,52 @@
               </tr>
             </thead>
             <tbody id="fournisseursTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════ CLIENTS (ont commandé) ════ -->
+    <section id="sectionClients" class="section">
+      <div class="section-toolbar">
+        <div class="search-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="clientSearch" placeholder="Rechercher un client…" />
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="data-table" id="clientsTable">
+            <thead>
+              <tr>
+                <th>Prénom / Nom</th><th>Email</th><th>Téléphone</th>
+                <th>Commandes</th><th>Total dépensé</th><th>Dernière commande</th><th>Inscrit le</th>
+              </tr>
+            </thead>
+            <tbody id="clientsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════ UTILISATEURS (comptes) ═════ -->
+    <section id="sectionUtilisateurs" class="section">
+      <div class="section-toolbar">
+        <div class="search-wrap">
+          <i class="fas fa-search"></i>
+          <input type="text" id="userSearch" placeholder="Rechercher un utilisateur…" />
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="data-table" id="utilisateursTable">
+            <thead>
+              <tr>
+                <th>Prénom / Nom</th><th>Email</th><th>Téléphone</th>
+                <th>Commandes</th><th>Inscrit le</th>
+              </tr>
+            </thead>
+            <tbody id="utilisateursTbody"></tbody>
           </table>
         </div>
       </div>
