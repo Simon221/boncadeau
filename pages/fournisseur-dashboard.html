@@ -208,6 +208,9 @@
         <i class="fas fa-receipt"></i><span>Mes commandes</span>
         <span class="badge" id="badgeCommandes"></span>
       </a>
+      <a href="#" class="nav-item" data-section="paiements">
+        <i class="fas fa-credit-card"></i><span>Paiements</span>
+      </a>
     </nav>
 
     <div class="sidebar__footer">
@@ -331,6 +334,56 @@
           </table>
         </div>
         <div class="pagination" id="cmdPagination"></div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════ PAIEMENTS ═════════════════ -->
+    <section id="sectionPaiements" class="section">
+      <div class="card">
+        <div class="card__header">
+          <h2 class="card__title"><i class="fas fa-credit-card"></i> Mes Paiements</h2>
+          <p style="font-size:.85rem;color:#64748b;margin-top:4px;">Suivi des paiements reçus et du solde dû</p>
+        </div>
+
+        <!-- Bilan financier -->
+        <div style="background:linear-gradient(135deg, #f0fdfa, #ccfbf1);border:1px solid #99f6e4;border-radius:12px;padding:24px;margin-bottom:28px;display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:20px;">
+          <div style="text-align:center;border-right:1px solid rgba(13,148,136,.15);padding-right:20px;">
+            <div style="font-size:.75rem;color:#0d9488;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-weight:700;">Généré</div>
+            <div style="font-size:2rem;font-weight:700;color:#0d9488;" id="bilanGenere">0 FCFA</div>
+            <div style="font-size:.8rem;color:#64748b;margin-top:6px;" id="bilanNbCommandes">0 commandes utilisées</div>
+          </div>
+          <div style="text-align:center;border-right:1px solid rgba(13,148,136,.15);padding-right:20px;">
+            <div style="font-size:.75rem;color:#2563eb;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-weight:700;">Payé</div>
+            <div style="font-size:2rem;font-weight:700;color:#2563eb;" id="bilanPaye">0 FCFA</div>
+            <div style="font-size:.8rem;color:#64748b;margin-top:6px;">Total reçu</div>
+          </div>
+          <div style="text-align:center;padding-right:20px;">
+            <div style="font-size:.75rem;color:#dc2626;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-weight:700;">Dû</div>
+            <div style="font-size:2rem;font-weight:700;color:#dc2626;" id="bilanDu">0 FCFA</div>
+            <div style="font-size:.8rem;color:#64748b;margin-top:6px;">Solde à recevoir</div>
+          </div>
+        </div>
+
+        <!-- Historique -->
+        <h3 style="font-size:1rem;color:#1e293b;margin-bottom:16px;padding:0 0 12px 0;border-bottom:2px solid #e2e8f0;">
+          <i class="fas fa-history" style="margin-right:8px;color:#0d9488;"></i> 
+          Historique des paiements
+        </h3>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date du paiement</th>
+                <th>Montant (FCFA)</th>
+                <th>Référence</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody id="paiementsTbody">
+              <tr><td colspan="4" style="text-align:center;color:#999;padding:24px;">Chargement...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 

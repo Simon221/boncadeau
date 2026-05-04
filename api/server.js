@@ -1150,6 +1150,213 @@ app.patch('/api/fournisseurs/commandes/:id/utilise', requireFournisseur, async (
   }
 });
 
+/* ══════════════════════ PAIEMENTS FOURNISSEURS ════════════════════ */
+
+// GET Admin : Tous les paiements avec bilan par fournisseur
+app.get('/api/admin/paiements', requireAdmin, async (req, res) => {
+  try {
+    const conn = await pool.getConnection();
+    
+    // Récupérer la config admin percentage
+    const [configRows] = await conn.query(
+      'SELECT valeur FROM config_system WHERE clef = ?',
+      ['pourcentage_admin']
+    );
+    const adminPercentage = configRows.length > 0 ? parseFloat(configRows[0].valeur) : 10;
+    
+    // Récupérer les fournisseurs avec leur bilan
+    const [fournisseurs] = await conn.query(`
+      SELECT 
+        f.id,
+        f.nom,
+        f.email,
+        COALESCE(SUM(
+          CASE WHEN c.statut = 'utilise' 
+          THEN b.prix * (100 - ?) / 100
+          ELSE 0 END
+        ), 0) as total_genere,
+        COALESCE(SUM(p.montant), 0) as total_paye,
+        COALESCE(SUM(
+          CASE WHEN c.statut = 'utilise' 
+          THEN b.prix * (100 - ?) / 100
+          ELSE 0 END
+        ), 0) - COALESCE(SUM(p.montant), 0) as solde_du
+      FROM fournisseurs f
+      LEFT JOIN commandes c ON c.bon_id IN (
+        SELECT id FROM bons WHERE fournisseur_id = f.id
+      )
+      LEFT JOIN bons b ON b.id = c.bon_id
+      LEFT JOIN paiements p ON p.fournisseur_id = f.id
+      GROUP BY f.id, f.nom, f.email
+      ORDER BY solde_du DESC
+    `, [adminPercentage, adminPercentage]);
+    
+    conn.release();
+    res.json({ success: true, data: fournisseurs });
+  } catch (error) {
+    console.error('❌ Erreur GET /api/admin/paiements:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// GET Admin : Historique des paiements pour un fournisseur
+app.get('/api/admin/fournisseurs/:id/paiements', requireAdmin, async (req, res) => {
+  try {
+    const conn = await pool.getConnection();
+    const fournisseurId = parseInt(req.params.id);
+    
+    const [paiements] = await conn.query(`
+      SELECT 
+        p.id,
+        p.montant,
+        p.date_paiement,
+        p.reference,
+        p.notes,
+        p.created_at
+      FROM paiements p
+      WHERE p.fournisseur_id = ?
+      ORDER BY p.date_paiement DESC
+    `, [fournisseurId]);
+    
+    conn.release();
+    res.json({ success: true, data: paiements });
+  } catch (error) {
+    console.error('❌ Erreur GET /api/admin/fournisseurs/:id/paiements:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// GET Admin : Bilan détaillé pour un fournisseur
+app.get('/api/admin/fournisseurs/:id/bilan', requireAdmin, async (req, res) => {
+  try {
+    const conn = await pool.getConnection();
+    const fournisseurId = parseInt(req.params.id);
+    
+    const [configRows] = await conn.query(
+      'SELECT valeur FROM config_system WHERE clef = ?',
+      ['pourcentage_admin']
+    );
+    const adminPercentage = configRows.length > 0 ? parseFloat(configRows[0].valeur) : 10;
+    
+    const [bilan] = await conn.query(`
+      SELECT 
+        COUNT(DISTINCT c.id) as nb_commandes_utilisees,
+        COALESCE(SUM(
+          CASE WHEN c.statut = 'utilise'
+          THEN b.prix * (100 - ?) / 100
+          ELSE 0 END
+        ), 0) as total_genere,
+        COALESCE(SUM(p.montant), 0) as total_paye
+      FROM fournisseurs f
+      LEFT JOIN bons b ON b.fournisseur_id = f.id
+      LEFT JOIN commandes c ON c.bon_id = b.id
+      LEFT JOIN paiements p ON p.fournisseur_id = f.id
+      WHERE f.id = ?
+    `, [adminPercentage, fournisseurId]);
+    
+    conn.release();
+    
+    const result = bilan[0];
+    result.solde_du = result.total_genere - result.total_paye;
+    
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('❌ Erreur GET /api/admin/fournisseurs/:id/bilan:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// POST Admin : Déclarer un paiement
+app.post('/api/admin/paiements', requireAdmin, async (req, res) => {
+  try {
+    const { fournisseur_id, montant, date_paiement, reference, notes } = req.body;
+    
+    if (!fournisseur_id || !montant || !date_paiement) {
+      return res.status(400).json({ error: 'Champs manquants' });
+    }
+    
+    const conn = await pool.getConnection();
+    
+    await conn.query(`
+      INSERT INTO paiements (fournisseur_id, montant, date_paiement, reference, notes)
+      VALUES (?, ?, ?, ?, ?)
+    `, [fournisseur_id, montant, date_paiement, reference || null, notes || null]);
+    
+    conn.release();
+    res.json({ success: true, message: 'Paiement enregistré' });
+  } catch (error) {
+    console.error('❌ Erreur POST /api/admin/paiements:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// GET Fournisseur : Son bilan personnel
+app.get('/api/fournisseurs/bilan', requireFournisseur, async (req, res) => {
+  try {
+    const conn = await pool.getConnection();
+    const fournisseurId = req.fournisseur.id;
+    
+    const [configRows] = await conn.query(
+      'SELECT valeur FROM config_system WHERE clef = ?',
+      ['pourcentage_admin']
+    );
+    const adminPercentage = configRows.length > 0 ? parseFloat(configRows[0].valeur) : 10;
+    
+    const [bilan] = await conn.query(`
+      SELECT 
+        COUNT(DISTINCT c.id) as nb_commandes_utilisees,
+        COALESCE(SUM(
+          CASE WHEN c.statut = 'utilise'
+          THEN b.prix * (100 - ?) / 100
+          ELSE 0 END
+        ), 0) as total_genere,
+        COALESCE(SUM(p.montant), 0) as total_paye
+      FROM fournisseurs f
+      LEFT JOIN bons b ON b.fournisseur_id = f.id
+      LEFT JOIN commandes c ON c.bon_id = b.id
+      LEFT JOIN paiements p ON p.fournisseur_id = f.id
+      WHERE f.id = ?
+    `, [adminPercentage, fournisseurId]);
+    
+    conn.release();
+    
+    const result = bilan[0];
+    result.solde_du = result.total_genere - result.total_paye;
+    
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('❌ Erreur GET /api/fournisseurs/bilan:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// GET Fournisseur : Historique des paiements reçus
+app.get('/api/fournisseurs/paiements', requireFournisseur, async (req, res) => {
+  try {
+    const conn = await pool.getConnection();
+    const fournisseurId = req.fournisseur.id;
+    
+    const [paiements] = await conn.query(`
+      SELECT 
+        p.id,
+        p.montant,
+        p.date_paiement,
+        p.reference,
+        p.notes,
+        p.created_at
+      FROM paiements p
+      WHERE p.fournisseur_id = ?
+      ORDER BY p.date_paiement DESC, p.created_at DESC
+    `, [fournisseurId]);
+    
+    conn.release();
+    res.json({ success: true, data: paiements });
+  } catch (error) {
+    console.error('❌ Erreur GET /api/fournisseurs/paiements:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
 /* ─── Démarrage ──────────────────────────────────────────── */
 app.listen(PORT, () => {
   console.log(`✅  BonCadeau API démarrée sur http://localhost:${PORT}`);

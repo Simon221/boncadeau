@@ -50,6 +50,7 @@ const sectionTitles = {
   commandes:     'Commandes',
   bons:          'Bons cadeaux',
   fournisseurs:  'Fournisseurs',
+  paiements:     'Paiements Fournisseurs',
   clients:       'Clients',
   utilisateurs:  'Utilisateurs',
 };
@@ -65,6 +66,7 @@ function showSection(name) {
   if (name === 'commandes')    loadCommandes();
   if (name === 'bons')         loadBons();
   if (name === 'fournisseurs') loadFournisseurs();
+  if (name === 'paiements')    loadPaiements();
   if (name === 'clients')      loadClients();
   if (name === 'utilisateurs') loadUtilisateurs();
 }
@@ -487,6 +489,124 @@ function slugify(str) {
    FOURNISSEURS
    ═══════════════════════════════════════════════════════════ */
 let editingFournisseurId = null;
+
+/* ════════════════════════════════════════════════════════════
+   PAIEMENTS FOURNISSEURS
+   ════════════════════════════════════════════════════════════ */
+async function loadPaiements() {
+  const res = await apiFetch('/api/admin/paiements');
+  if (!res.ok) {
+    showToast('Erreur lors du chargement des paiements.', 'error');
+    return;
+  }
+  const data = await res.json();
+  const fournisseurs = data.data || [];
+
+  const tbody = document.getElementById('paiementsTbody');
+  if (!fournisseurs.length) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="5">Aucun fournisseur avec des bons utilisés.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = fournisseurs.map(f => `
+    <tr>
+      <td>
+        <strong>${escHtml(f.nom)}</strong><br/>
+        <small style="color:#999">${escHtml(f.email)}</small>
+      </td>
+      <td class="text-right" style="text-align:right">
+        <span style="color:#16a34a;font-weight:700">${fmtNum(f.total_genere)} FCFA</span>
+      </td>
+      <td class="text-right" style="text-align:right">
+        <span style="color:#2563eb;font-weight:700">${fmtNum(f.total_paye)} FCFA</span>
+      </td>
+      <td class="text-right" style="text-align:right">
+        <span style="color:#dc2626;font-weight:700;font-size:1.05rem">${fmtNum(f.solde_du)} FCFA</span>
+      </td>
+      <td>
+        <div class="actions-cell">
+          <button class="btn btn-primary btn-sm" title="Détails et paiements" onclick="openPaiementDetail(${f.id}, '${escHtml(f.nom).replace(/'/g, "\\'")}')">
+            <i class="fas fa-receipt"></i> Détails
+          </button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+async function openPaiementDetail(fournisseurId, fournisseurNom) {
+  try {
+    // Récupérer le bilan
+    const bilRes = await apiFetch(`/api/admin/fournisseurs/${fournisseurId}/bilan`);
+    const bil = await bilRes.json();
+    const bilan = bil.data || bil;
+
+    // Récupérer l'historique des paiements
+    const paiRes = await apiFetch(`/api/admin/fournisseurs/${fournisseurId}/paiements`);
+    const paiData = await paiRes.json();
+    const paiements = paiData.data || [];
+
+    // Afficher le bilan
+    document.getElementById('detailGeneré').textContent = `${fmtNum(bilan.total_genere)} FCFA`;
+    document.getElementById('detailPayé').textContent = `${fmtNum(bilan.total_paye)} FCFA`;
+    document.getElementById('detailDû').textContent = `${fmtNum(bilan.solde_du)} FCFA`;
+
+    // Afficher l'historique
+    const tbody = document.getElementById('paiementsHistoriqueTbody');
+    if (!paiements.length) {
+      tbody.innerHTML = `<tr><td colspan="4" style="padding:16px;text-align:center;color:#999;">Aucun paiement enregistré</td></tr>`;
+    } else {
+      tbody.innerHTML = paiements.map(p => `
+        <tr style="border-bottom:1px solid #e2e8f0;">
+          <td style="padding:12px;">${fmtDate(p.date_paiement)}</td>
+          <td style="padding:12px;"><strong>${fmtNum(p.montant)} FCFA</strong></td>
+          <td style="padding:12px;">${p.reference ? `<code>${escHtml(p.reference)}</code>` : '—'}</td>
+          <td style="padding:12px;font-size:.85rem;color:#666;">${p.notes ? escHtml(p.notes) : '—'}</td>
+        </tr>`).join('');
+    }
+
+    // Préparer le modal
+    document.getElementById('paiementFournisseurId').value = fournisseurId;
+    document.getElementById('paiementMontant').value = '';
+    document.getElementById('paiementDate').valueAsDate = new Date();
+    document.getElementById('paiementRef').value = '';
+    document.getElementById('paiementNotes').value = '';
+
+    openModal('modalPaiementDetail');
+  } catch (error) {
+    console.error('Erreur:', error);
+    showToast('Erreur lors du chargement des détails.', 'error');
+  }
+}
+
+document.getElementById('btnSavePaiement').addEventListener('click', async () => {
+  const fournisseurId = parseInt(document.getElementById('paiementFournisseurId').value);
+  const montant = parseFloat(document.getElementById('paiementMontant').value);
+  const date = document.getElementById('paiementDate').value;
+  const reference = document.getElementById('paiementRef').value.trim() || null;
+  const notes = document.getElementById('paiementNotes').value.trim() || null;
+
+  if (!montant || montant <= 0 || !date) {
+    showToast('Veuillez remplir le montant et la date.', 'error');
+    return;
+  }
+
+  const res = await apiFetch('/api/admin/paiements', {
+    method: 'POST',
+    body: { fournisseur_id: fournisseurId, montant, date_paiement: date, reference, notes }
+  });
+
+  if (res.ok) {
+    showToast('Paiement enregistré avec succès.');
+    closeModal('modalNouveauPaiement');
+    // Recharger le detail
+    const fName = escHtml(fournisseurNom);
+    openPaiementDetail(fournisseurId, fName);
+    loadPaiements();
+  } else {
+    const data = await res.json();
+    showToast(data.error || 'Erreur lors de l\'enregistrement.', 'error');
+  }
+});
 
 /* ════════════════════════════════════════════════════════════
    CLIENTS (ont commandé au moins une fois)

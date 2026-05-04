@@ -128,11 +128,35 @@ CREATE TABLE IF NOT EXISTS admins (
   created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ─── Paiements fournisseurs ──────────────────────────────
+CREATE TABLE IF NOT EXISTS paiements (
+  id                INT AUTO_INCREMENT PRIMARY KEY,
+  fournisseur_id    INT NOT NULL,
+  montant           DECIMAL(12,2) NOT NULL,
+  date_paiement     DATE NOT NULL,
+  reference         VARCHAR(50),
+  notes             TEXT,
+  created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (fournisseur_id) REFERENCES fournisseurs(id) ON DELETE RESTRICT
+);
+
+-- ─── Configuration système ────────────────────────────────
+CREATE TABLE IF NOT EXISTS config_system (
+  clef   VARCHAR(50) PRIMARY KEY,
+  valeur VARCHAR(255) NOT NULL,
+  description TEXT
+);
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- Admin par défaut : admin@boncadeau.sn / Admin2026!
 INSERT IGNORE INTO admins (nom, email, password_hash) VALUES
   ('Super Admin', 'admin@boncadeau.sn', '$2b$12$X5LHanEAGkqNDsDZ4Bdwhew9zfLvmKDJ2gZgPf7bcYbccZ33LHPCG');
+
+-- Configuration système
+INSERT IGNORE INTO config_system (clef, valeur, description) VALUES
+  ('pourcentage_admin', '10', 'Pourcentage de commission admin sur chaque bon (en %)'),
+  ('devise', 'FCFA', 'Devise utilisée');
 
 -- ═══════════════════════════════════════════════════════════
 -- DONNÉES DE DÉMONSTRATION

@@ -48,6 +48,7 @@ function showToast(msg, type = 'success') {
 const sectionTitles = {
   dashboard: 'Tableau de bord',
   commandes: 'Mes commandes',
+  paiements: 'Mes Paiements',
 };
 
 function showSection(name) {
@@ -61,6 +62,7 @@ function showSection(name) {
 
   if (name === 'dashboard') loadDashboard();
   if (name === 'commandes') loadCommandes();
+  if (name === 'paiements') loadPaiementsFoo();
 }
 
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
@@ -346,7 +348,45 @@ document.getElementById('cmdSearch').addEventListener('input', () => {
   cmdPage = 1;
   loadCommandes();
 });
+/* ════════════════════════════════════════════════════════════
+   PAIEMENTS
+   ════════════════════════════════════════════════════════════ */
+async function loadPaiementsFoo() {
+  try {
+    // Récupérer le bilan
+    const bilRes = await apiFetch('/api/fournisseurs/bilan');
+    const bilData = await bilRes.json();
+    const bilan = bilData.data || bilData;
 
+    // Afficher le bilan
+    document.getElementById('bilanGenere').textContent = `${fmtNum(bilan.total_genere)} FCFA`;
+    document.getElementById('bilanNbCommandes').textContent = `${bilan.nb_commandes_utilisees} commande${bilan.nb_commandes_utilisees > 1 ? 's' : ''} utilisée${bilan.nb_commandes_utilisees > 1 ? 's' : ''}`;
+    document.getElementById('bilanPaye').textContent = `${fmtNum(bilan.total_paye)} FCFA`;
+    document.getElementById('bilanDu').textContent = `${fmtNum(bilan.solde_du)} FCFA`;
+
+    // Récupérer l'historique
+    const paiRes = await apiFetch('/api/fournisseurs/paiements');
+    const paiData = await paiRes.json();
+    const paiements = paiData.data || [];
+
+    // Afficher l'historique
+    const tbody = document.getElementById('paiementsTbody');
+    if (!paiements.length) {
+      tbody.innerHTML = `<tr><td colspan="4" style="padding:20px;text-align:center;color:#999;">Aucun paiement reçu pour l'instant.</td></tr>`;
+    } else {
+      tbody.innerHTML = paiements.map(p => `
+        <tr>
+          <td>${fmtDate(p.date_paiement)}</td>
+          <td><strong style="color:#16a34a;font-size:1.05rem;">${fmtNum(p.montant)} FCFA</strong></td>
+          <td>${p.reference ? `<code style="background:#f0f9ff;color:#0284c7;padding:3px 8px;border-radius:4px;font-size:.85rem;">${escHtml(p.reference)}</code>` : '—'}</td>
+          <td>${p.notes ? `<span style="color:#666;font-size:.9rem;">${escHtml(p.notes)}</span>` : '—'}</td>
+        </tr>`).join('');
+    }
+  } catch (error) {
+    console.error('Erreur:', error);
+    showToast('Erreur lors du chargement des paiements.', 'error');
+  }
+}
 /* ─── Modal helpers ──────────────────────────────────────── */
 function openModal(id) {
   document.getElementById(id).classList.add('open');
