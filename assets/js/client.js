@@ -4,6 +4,7 @@
 'use strict';
 
 const API = 'http://localhost:3001';
+let ordersData = [];
 
 /* ─── Auth check ────────────────────────────────────────── */
 const token = localStorage.getItem('client_token');
@@ -89,12 +90,18 @@ function renderCard(c) {
           <div class="order-message">
             <i class="fas fa-quote-left"></i> ${escHtml(c.message)}
           </div>` : ''}
-        ${canReview ? `
-          <button class="btn-review" data-bon-title="${escHtml(c.bon_titre)}" onclick="openAvis(${c.id}, this.getAttribute('data-bon-title'))">
-            <i class="fas fa-star"></i> Écrire un avis
-          </button>` : ''}
-        ${Number(c.a_avis) > 0 ? `
-          <p class="avis-done"><i class="fas fa-check-circle"></i> Avis publié — merci !</p>` : ''}
+        <div class="order-actions">
+          ${c.statut !== 'annulee' ? `
+            <button class="btn-voucher" onclick="openVoucher(${c.id})">
+              <i class="fas fa-ticket-alt"></i> Mon bon cadeau
+            </button>` : ''}
+          ${canReview ? `
+            <button class="btn-review" data-bon-title="${escHtml(c.bon_titre)}" onclick="openAvis(${c.id}, this.getAttribute('data-bon-title'))">
+              <i class="fas fa-star"></i> Écrire un avis
+            </button>` : ''}
+          ${Number(c.a_avis) > 0 ? `
+            <p class="avis-done"><i class="fas fa-check-circle"></i> Avis publié — merci !</p>` : ''}
+        </div>
       </div>
     </article>`;
 }
@@ -112,6 +119,7 @@ async function loadOrders() {
       return;
     }
     const { data } = await res.json();
+    ordersData = data;
     document.getElementById('statCount').textContent = data.length;
 
     if (!data.length) {
@@ -215,6 +223,98 @@ document.getElementById('avisForm').addEventListener('submit', async e => {
     btn.innerHTML = orig;
   }
 });
+/* ─── Bon cadeau — Voucher modal ──────────────────────────────────────── */
+function openVoucher(id) {
+  const c = ordersData.find(o => o.id === id);
+  if (!c) return;
 
+  // Date de validité : date d'achat + 1 an
+  const exp = new Date(c.created_at);
+  exp.setFullYear(exp.getFullYear() + 1);
+  const validStr = `Valable jusqu'au ${exp.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })}`;
+
+  document.getElementById('v-categorie').textContent = (c.categorie || c.bon_titre).toUpperCase();
+  document.getElementById('v-amount').textContent    = fmtNum(c.prix) + ' ' + c.devise;
+  document.getElementById('v-order').textContent     = c.reference;
+  document.getElementById('v-validity').textContent  = validStr;
+  document.getElementById('v-sname').textContent     = c.fournisseur;
+
+  const parts = [c.fournisseur_adresse, c.fournisseur_telephone, c.fournisseur_email].filter(Boolean);
+  document.getElementById('v-sinfo').innerHTML = parts.map(escHtml).join('<br>') || '';
+
+  const dest = c.prenom_dest ? (c.prenom_dest + (c.nom_dest ? ' ' + c.nom_dest : '')) : null;
+  document.getElementById('v-message').textContent =
+    dest ? ('\u00ab Offert \u00e0 ' + dest + ' \u00bb') : (c.message ? ('\u00ab ' + c.message + ' \u00bb') : '\u00ab Offrez un moment d\u2019exception \u00bb');
+
+  // QR Code
+  const qrContainer = document.getElementById('voucherQR');
+  qrContainer.innerHTML = '';
+  new QRCode(qrContainer, {
+    text: 'https://boncadeau.sn/verify/' + encodeURIComponent(c.reference),
+    width: 80, height: 80,
+    colorDark: '#8B6914', colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.H
+  });
+
+  document.getElementById('voucherOverlay').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeVoucher() {
+  document.getElementById('voucherOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+}
+
+async function downloadVoucher() {
+  const card = document.getElementById('voucherCard');
+  const ref  = document.getElementById('v-order').textContent;
+  const btn  = document.getElementById('btnVoucherDl');
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  try {
+    const canvas = await html2canvas(card, { scale: 2, backgroundColor: '#FDFAF3', useCORS: true });
+    const link   = document.createElement('a');
+    link.download = 'boncadeau-' + ref + '.png';
+    link.href     = canvas.toDataURL('image/png');
+    link.click();
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = orig;
+  }
+}
+
+async function shareVoucherWhatsApp() {
+  const card = document.getElementById('voucherCard');
+  const ref  = document.getElementById('v-order').textContent;
+  const btn  = document.getElementById('btnVoucherWa');
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+  try {
+    const canvas = await html2canvas(card, { scale: 2, backgroundColor: '#FDFAF3', useCORS: true });
+    canvas.toBlob(async blob => {
+      // Web Share API (mobile)
+      if (blob && navigator.canShare) {
+        const file = new File([blob], 'boncadeau-' + ref + '.png', { type: 'image/png' });
+        if (navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({ files: [file], title: 'Mon bon cadeau', text: 'BonCadeau.sn — Réf : ' + ref });
+            return;
+          } catch {}
+        }
+      }
+      // Fallback : lien WhatsApp avec texte
+      const text = encodeURIComponent(
+        '🎁 *Mon bon cadeau BonCadeau.sn*\nRéférence : ' + ref +
+        '\nhttps://boncadeau.sn/verify/' + encodeURIComponent(ref)
+      );
+      window.open('https://api.whatsapp.com/send?text=' + text, '_blank');
+    });
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = orig;
+  }
+}
 /* ─── Init ──────────────────────────────────────────────── */
 loadOrders();

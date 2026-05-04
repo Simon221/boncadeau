@@ -322,10 +322,15 @@ app.get('/api/clients/commandes', requireClient, async (req, res) => {
       `SELECT c.id, c.reference, c.statut, c.created_at,
               c.prenom_dest, c.nom_dest, c.message,
               b.titre AS bon_titre, b.prix, b.devise, b.icone, b.couleur_fond, b.slug AS bon_slug,
+              cat.nom AS categorie,
               f.nom AS fournisseur,
+              f.adresse   AS fournisseur_adresse,
+              f.telephone AS fournisseur_telephone,
+              f.email     AS fournisseur_email,
               (SELECT COUNT(*) FROM avis a WHERE a.commande_id = c.id) AS a_avis
        FROM commandes c
        JOIN bons b ON b.id = c.bon_id
+       JOIN categories cat ON cat.id = b.categorie_id
        JOIN fournisseurs f ON f.id = b.fournisseur_id
        WHERE c.client_id = ?
        ORDER BY c.created_at DESC`,

@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BonCadeau — Générateur de bon</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f0e8;
+      min-height: 100vh;
+      padding: 24px;
+      color: #1a1a1a;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 22px;
+      color: #8B6914;
+      margin-bottom: 6px;
+      letter-spacing: 1px;
+    }
+    .subtitle {
+      text-align: center;
+      font-size: 12px;
+      color: #999;
+      margin-bottom: 28px;
+      font-style: italic;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 24px;
+      max-width: 960px;
+      margin: 0 auto;
+      align-items: start;
+    }
+
+    /* ── FORM PANEL ── */
+    .panel {
+      background: white;
+      border: 1px solid #e8d5a3;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 14px;
+    }
+    .panel h3 {
+      font-size: 11px;
+      font-weight: 600;
+      color: #C9A84C;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 14px;
+      border-bottom: 0.5px solid #f0e8d0;
+      padding-bottom: 8px;
+    }
+    .field { margin-bottom: 11px; }
+    .field label {
+      display: block;
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 4px;
+    }
+    .field input, .field select {
+      width: 100%;
+      font-size: 13px;
+      padding: 8px 10px;
+      border: 1px solid #e8d5a3;
+      border-radius: 7px;
+      background: #fdfaf3;
+      color: #1a1a1a;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .field input:focus, .field select:focus {
+      border-color: #C9A84C;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 11px;
+      background: linear-gradient(135deg, #C9A84C, #E8D5A3, #C9A84C);
+      color: #5a3e00;
+      font-weight: 600;
+      font-size: 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 4px;
+      transition: opacity 0.2s;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+
+    .btn-secondary {
+      width: 100%;
+      padding: 10px;
+      background: white;
+      border: 1.5px solid #C9A84C;
+      color: #8B6914;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      margin-top: 8px;
+      transition: background 0.2s;
+    }
+    .btn-secondary:hover { background: #fdf6e3; }
+
+    /* ── VOUCHER ── */
+    .voucher-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    #voucher {
+      width: 100%;
+      max-width: 560px;
+      background: #FDFAF3;
+      border: 2.5px solid #C9A84C;
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+      font-family: Georgia, serif;
+      box-shadow: 4px 4px 0 #D4B86A;
+    }
+
+    .v-border-inner {
+      position: absolute;
+      inset: 7px;
+      border: 0.5px solid #E8D5A3;
+      border-radius: 11px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .v-gold-bar {
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 10px;
+      background: #C9A84C;
+      border-radius: 14px 0 0 14px;
+    }
+
+    .v-body {
+      display: flex;
+    }
+
+    .v-left {
+      flex: 1;
+      padding: 20px 18px 16px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .v-brand {
+      font-size: 24px;
+      font-weight: 700;
+      color: #8B6914;
+      letter-spacing: 1.5px;
+    }
+    .v-site {
+      font-size: 10px;
+      color: #C9A84C;
+      font-style: italic;
+      margin-top: -8px;
+    }
+
+    .v-divider {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .v-divider-line {
+      flex: 1;
+      height: 0.5px;
+      background: #C9A84C;
+    }
+    .v-diamond {
+      width: 7px;
+      height: 7px;
+      background: #C9A84C;
+      transform: rotate(45deg);
+    }
+
+    .v-badge {
+      background: #C9A84C;
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 6px;
+      display: inline-block;
+      letter-spacing: 0.05em;
+      font-family: sans-serif;
+    }
+
+    .v-amount {
+      font-size: 30px;
+      font-weight: 700;
+      color: #1A1A1A;
+      letter-spacing: -0.5px;
+      font-family: sans-serif;
+      line-height: 1;
+    }
+    .v-amount-label {
+      font-size: 9px;
+      color: #6B6B6B;
+      font-family: sans-serif;
+    }
+
+    .v-message {
+      font-size: 11px;
+      color: #8B6914;
+      font-style: italic;
+    }
+
+    .v-validity {
+      font-size: 9px;
+      color: #aaa;
+      font-family: sans-serif;
+      margin-top: auto;
+      padding-top: 6px;
+    }
+
+    .v-sep {
+      width: 0.5px;
+      background: repeating-linear-gradient(
+        to bottom,
+        #E8D5A3 0, #E8D5A3 4px,
+        transparent 4px, transparent 8px
+      );
+      margin: 14px 0;
+    }
+
+    .v-right {
+      width: 168px;
+      flex-shrink: 0;
+      padding: 20px 16px 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .v-supplier-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #8B6914;
+      font-family: sans-serif;
+    }
+    .v-supplier-info {
+      font-size: 9px;
+      color: #555;
+      line-height: 1.7;
+      font-family: sans-serif;
+    }
+
+    .v-order-box {
+      background: #fdfaf3;
+      border: 0.5px solid #E8D5A3;
+      border-radius: 5px;
+      padding: 6px 8px;
+    }
+    .v-order-label {
+      font-size: 8px;
+      color: #aaa;
+      font-family: sans-serif;
+    }
+    .v-order-num {
+      font-size: 10px;
+      font-weight: 700;
+      color: #1A1A1A;
+      font-family: sans-serif;
+      word-break: break-all;
+    }
+
+    .v-qr-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      margin-top: auto;
+    }
+    .v-qr-frame {
+      border: 1.5px solid #C9A84C;
+      border-radius: 6px;
+      padding: 4px;
+      background: white;
+    }
+    .v-qr-label {
+      font-size: 8px;
+      color: #aaa;
+      font-family: sans-serif;
+    }
+
+    /* Steps */
+    .v-steps {
+      border-top: 1px solid #E8D5A3;
+      padding: 14px 24px;
+      display: flex;
+      gap: 10px;
+    }
+    .v-step {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .v-step-num {
+      width: 26px;
+      height: 26px;
+      background: #C9A84C;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: white;
+      font-family: sans-serif;
+    }
+    .v-step-box {
+      background: #fdfaf3;
+      border: 0.5px solid #E8D5A3;
+      border-radius: 6px;
+      padding: 6px 8px;
+      text-align: center;
+      width: 100%;
+    }
+    .v-step-title {
+      font-size: 9px;
+      font-weight: 700;
+      color: #1A1A1A;
+      font-family: sans-serif;
+    }
+    .v-step-sub {
+      font-size: 8px;
+      color: #999;
+      font-family: sans-serif;
+      margin-top: 2px;
+    }
+
+    /* Footer */
+    .v-footer {
+      border-top: 0.5px solid #E8D5A3;
+      padding: 8px 24px;
+      text-align: center;
+    }
+    .v-footer-text {
+      font-size: 8px;
+      color: #bbb;
+      font-family: sans-serif;
+    }
+    .v-footer-brand {
+      font-size: 9px;
+      color: #C9A84C;
+      font-style: italic;
+      margin-top: 2px;
+      font-family: sans-serif;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: #aaa;
+      text-align: center;
+    }
+
+    @media (max-width: 680px) {
+      .app { grid-template-columns: 1fr; }
+      body { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>BON CADEAU</h1>
+<p class="subtitle">boncadeau.sn — Générateur de bon cadeau</p>
+
+<div class="app">
+
+  <!-- FORM -->
+  <div>
+    <div class="panel">
+      <h3>Informations du bon</h3>
+
+      <div class="field">
+        <label>Type de bon</label>
+        <select id="f-type" onchange="update()">
+          <option value="SPA & BIEN-ÊTRE">Spa & Bien-être</option>
+          <option value="MONTRES DE LUXE">Montres de luxe</option>
+          <option value="VÊTEMENTS">Vêtements</option>
+          <option value="GASTRONOMIE">Gastronomie</option>
+          <option value="BIJOUX">Bijoux</option>
+          <option value="VOYAGE">Voyage</option>
+          <option value="SPORT & FITNESS">Sport & Fitness</option>
+          <option value="TECHNOLOGIE">Technologie</option>
+          <option value="AUTRE">Autre</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Montant</label>
+        <input id="f-amount" type="text" value="75 000 FCFA" oninput="update()" />
+      </div>
+
+      <div class="field">
+        <label>Numéro de commande</label>
+        <input id="f-order" type="text" value="BC-2024-00842" oninput="update()" />
+      </div>
+
+      <div class="field">
+        <label>Message personnalisé</label>
+        <input id="f-message" type="text" value="Offrez un moment d'exception" oninput="update()" />
+      </div>
+
+      <div class="field">
+        <label>Date de validité</label>
+        <input id="f-validity" type="text" value="Valable jusqu'au 31 déc. 2025" oninput="update()" />
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Fournisseur</h3>
+
+      <div class="field">
+        <label>Nom du fournisseur</label>
+        <input id="f-sname" type="text" value="Luxe Spa Dakar" oninput="update()" />
+      </div>
+      <div class="field">
+        <label>Adresse</label>
+        <input id="f-saddr" type="text" value="Av. Cheikh Anta Diop, Dakar" oninput="update()" />
+      </div>
+      <div class="field">
+        <label>Téléphone</label>
+        <input id="f-sphone" type="text" value="+221 33 820 00 00" oninput="update()" />
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input id="f-semail" type="text" value="contact@luxespa.sn" oninput="update()" />
+      </div>
+
+      <button class="btn-primary" onclick="update()">Mettre à jour</button>
+      <button class="btn-secondary" onclick="downloadPNG()">Télécharger en PNG</button>
+    </div>
+  </div>
+
+  <!-- VOUCHER PREVIEW -->
+  <div class="voucher-wrap">
+    <div id="voucher">
+      <div class="v-border-inner"></div>
+      <div class="v-gold-bar"></div>
+
+      <div class="v-body">
+        <div class="v-left">
+          <div>
+            <div class="v-brand">BON CADEAU</div>
+            <div class="v-site">boncadeau.sn</div>
+          </div>
+
+          <div class="v-divider">
+            <div class="v-divider-line"></div>
+            <div class="v-diamond"></div>
+            <div class="v-divider-line"></div>
+          </div>
+
+          <div><span class="v-badge" id="v-type">SPA & BIEN-ÊTRE</span></div>
+
+          <div>
+            <div class="v-amount" id="v-amount">75 000 FCFA</div>
+            <div class="v-amount-label">Valeur du bon</div>
+          </div>
+
+          <div class="v-message" id="v-message">« Offrez un moment d'exception »</div>
+          <div class="v-validity" id="v-validity">Valable jusqu'au 31 déc. 2025</div>
+        </div>
+
+        <div class="v-sep"></div>
+
+        <div class="v-right">
+          <div>
+            <div class="v-supplier-name" id="v-sname">Luxe Spa Dakar</div>
+            <div class="v-supplier-info" id="v-sinfo">
+              Av. Cheikh Anta Diop, Dakar<br>
+              +221 33 820 00 00<br>
+              contact@luxespa.sn
+            </div>
+          </div>
+
+          <div class="v-order-box">
+            <div class="v-order-label">N° DE COMMANDE</div>
+            <div class="v-order-num" id="v-order">BC-2024-00842</div>
+          </div>
+
+          <div class="v-qr-wrap">
+            <div class="v-qr-frame" id="qr-container"></div>
+            <div class="v-qr-label">Scanner pour vérifier</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="v-steps">
+        <div class="v-step">
+          <div class="v-step-num">1</div>
+          <div class="v-step-box">
+            <div class="v-step-title">Présentez ce bon</div>
+            <div class="v-step-sub">chez le fournisseur</div>
+          </div>
+        </div>
+        <div class="v-step">
+          <div class="v-step-num">2</div>
+          <div class="v-step-box">
+            <div class="v-step-title">Scannez le QR code</div>
+            <div class="v-step-sub">vérifiez l'authenticité</div>
+          </div>
+        </div>
+        <div class="v-step">
+          <div class="v-step-num">3</div>
+          <div class="v-step-box">
+            <div class="v-step-title">Profitez !</div>
+            <div class="v-step-sub">votre expérience unique</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="v-footer">
+        <div class="v-footer-text">Ce bon est émis par boncadeau.sn · support@boncadeau.sn</div>
+        <div class="v-footer-brand">boncadeau.sn — L'art d'offrir</div>
+      </div>
+    </div>
+
+    <p class="hint">Modifiez les champs à gauche — le bon se met à jour en temps réel</p>
+  </div>
+</div>
+
+<script>
+  let qrInstance = null;
+
+  function update() {
+    document.getElementById('v-type').textContent = document.getElementById('f-type').value;
+    document.getElementById('v-amount').textContent = document.getElementById('f-amount').value;
+    document.getElementById('v-order').textContent = document.getElementById('f-order').value;
+    document.getElementById('v-message').textContent = '« ' + document.getElementById('f-message').value + ' »';
+    document.getElementById('v-validity').textContent = document.getElementById('f-validity').value;
+    document.getElementById('v-sname').textContent = document.getElementById('f-sname').value;
+    document.getElementById('v-sinfo').innerHTML =
+      document.getElementById('f-saddr').value + '<br>' +
+      document.getElementById('f-sphone').value + '<br>' +
+      document.getElementById('f-semail').value;
+
+    generateQR();
+  }
+
+  function generateQR() {
+    const order = document.getElementById('f-order').value;
+    const url = 'https://boncadeau.sn/verify/' + encodeURIComponent(order);
+    const container = document.getElementById('qr-container');
+    container.innerHTML = '';
+
+    if (typeof QRCode !== 'undefined') {
+      new QRCode(container, {
+        text: url,
+        width: 80,
+        height: 80,
+        colorDark: '#8B6914',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    } else {
+      container.textContent = 'QR Code';
+    }
+  }
+
+  function downloadPNG() {
+    const voucher = document.getElementById('voucher');
+    html2canvas(voucher, {
+      scale: 2,
+      backgroundColor: '#FDFAF3',
+      useCORS: true
+    }).then(canvas => {
+      const a = document.createElement('a');
+      a.download = 'boncadeau-' + document.getElementById('f-order').value + '.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+    });
+  }
+
+  window.onload = () => {
+    generateQR();
+  };
+</script>
+</body>
+</html>

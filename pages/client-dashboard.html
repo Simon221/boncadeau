@@ -9,6 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <link rel="stylesheet" href="../assets/css/client.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body class="dashboard-body">
 
@@ -82,6 +84,96 @@
           <i class="fas fa-paper-plane"></i> Publier mon avis
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- ─── MODAL BON CADEAU ─────────────────────────────────── -->
+  <div class="modal-overlay" id="voucherOverlay" onclick="if(event.target===this)closeVoucher()">
+    <div class="voucher-modal-wrap">
+      <button class="modal-close" onclick="closeVoucher()"><i class="fas fa-times"></i></button>
+
+      <!-- Carte capturable par html2canvas -->
+      <div id="voucherCard">
+        <div class="v-border-inner"></div>
+        <div class="v-gold-bar"></div>
+
+        <div class="v-body">
+          <div class="v-left">
+            <div>
+              <div class="v-brand">BON CADEAU</div>
+              <div class="v-site">boncadeau.sn</div>
+            </div>
+            <div class="v-divider">
+              <div class="v-divider-line"></div>
+              <div class="v-diamond"></div>
+              <div class="v-divider-line"></div>
+            </div>
+            <div><span class="v-badge" id="v-categorie">—</span></div>
+            <div>
+              <div class="v-amount" id="v-amount">—</div>
+              <div class="v-amount-label">Valeur du bon</div>
+            </div>
+            <div class="v-message" id="v-message">« … »</div>
+            <div class="v-validity" id="v-validity">Valable 1 an à compter de la date d'achat</div>
+          </div>
+
+          <div class="v-sep"></div>
+
+          <div class="v-right">
+            <div>
+              <div class="v-supplier-name" id="v-sname"></div>
+              <div class="v-supplier-info" id="v-sinfo"></div>
+            </div>
+            <div class="v-order-box">
+              <div class="v-order-label">N° DE COMMANDE</div>
+              <div class="v-order-num" id="v-order"></div>
+            </div>
+            <div class="v-qr-wrap">
+              <div class="v-qr-frame"><div id="voucherQR"></div></div>
+              <div class="v-qr-label">Scanner pour vérifier</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-steps">
+          <div class="v-step">
+            <div class="v-step-num">1</div>
+            <div class="v-step-box">
+              <div class="v-step-title">Présentez ce bon</div>
+              <div class="v-step-sub">chez le fournisseur</div>
+            </div>
+          </div>
+          <div class="v-step">
+            <div class="v-step-num">2</div>
+            <div class="v-step-box">
+              <div class="v-step-title">Scannez le QR code</div>
+              <div class="v-step-sub">vérifiez l'authenticité</div>
+            </div>
+          </div>
+          <div class="v-step">
+            <div class="v-step-num">3</div>
+            <div class="v-step-box">
+              <div class="v-step-title">Profitez !</div>
+              <div class="v-step-sub">votre expérience unique</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="v-footer">
+          <div class="v-footer-text">Ce bon est émis par boncadeau.sn · support@boncadeau.sn</div>
+          <div class="v-footer-brand">boncadeau.sn — L'art d'offrir</div>
+        </div>
+      </div>
+
+      <!-- Boutons d'action -->
+      <div class="voucher-actions">
+        <button class="btn-voucher-dl" id="btnVoucherDl" onclick="downloadVoucher()">
+          <i class="fas fa-download"></i> Télécharger
+        </button>
+        <button class="btn-voucher-wa" id="btnVoucherWa" onclick="shareVoucherWhatsApp()">
+          <i class="fab fa-whatsapp"></i> WhatsApp
+        </button>
+      </div>
     </div>
   </div>
 
