@@ -1170,26 +1170,29 @@ app.get('/api/admin/paiements', requireAdmin, async (req, res) => {
         f.id,
         f.nom,
         f.email,
-        COALESCE(SUM(
-          CASE WHEN c.statut = 'utilise' 
-          THEN b.prix * (100 - ?) / 100
-          ELSE 0 END
-        ), 0) as total_genere,
-        COALESCE(SUM(p.montant), 0) as total_paye,
-        COALESCE(SUM(
-          CASE WHEN c.statut = 'utilise' 
-          THEN b.prix * (100 - ?) / 100
-          ELSE 0 END
-        ), 0) - COALESCE(SUM(p.montant), 0) as solde_du
+        COALESCE(revenue_sub.total_genere, 0) as total_genere,
+        COALESCE(payment_sub.total_paye, 0) as total_paye,
+        COALESCE(revenue_sub.total_genere, 0) - COALESCE(payment_sub.total_paye, 0) as solde_du
       FROM fournisseurs f
-      LEFT JOIN commandes c ON c.bon_id IN (
-        SELECT id FROM bons WHERE fournisseur_id = f.id
-      )
-      LEFT JOIN bons b ON b.id = c.bon_id
-      LEFT JOIN paiements p ON p.fournisseur_id = f.id AND p.statut = 'effectif'
-      GROUP BY f.id, f.nom, f.email
+      LEFT JOIN (
+        SELECT 
+          b.fournisseur_id,
+          SUM(b.prix * (100 - ?) / 100) as total_genere
+        FROM commandes c
+        JOIN bons b ON b.id = c.bon_id
+        WHERE c.statut = 'utilise'
+        GROUP BY b.fournisseur_id
+      ) revenue_sub ON revenue_sub.fournisseur_id = f.id
+      LEFT JOIN (
+        SELECT 
+          fournisseur_id,
+          SUM(montant) as total_paye
+        FROM paiements
+        WHERE statut = 'effectif'
+        GROUP BY fournisseur_id
+      ) payment_sub ON payment_sub.fournisseur_id = f.id
       ORDER BY solde_du DESC
-    `, [adminPercentage, adminPercentage]);
+    `, [adminPercentage]);
     
     conn.release();
     res.json({ success: true, data: fournisseurs });
@@ -1241,19 +1244,26 @@ app.get('/api/admin/fournisseurs/:id/bilan', requireAdmin, async (req, res) => {
     
     const [bilan] = await conn.query(`
       SELECT 
-        COUNT(DISTINCT c.id) as nb_commandes_utilisees,
-        COALESCE(SUM(
-          CASE WHEN c.statut = 'utilise'
-          THEN b.prix * (100 - ?) / 100
-          ELSE 0 END
-        ), 0) as total_genere,
-        COALESCE(SUM(p.montant), 0) as total_paye
+        COALESCE(revenue_sub.nb_commandes, 0) as nb_commandes_utilisees,
+        COALESCE(revenue_sub.total_genere, 0) as total_genere,
+        COALESCE(payment_sub.total_paye, 0) as total_paye
       FROM fournisseurs f
-      LEFT JOIN bons b ON b.fournisseur_id = f.id
-      LEFT JOIN commandes c ON c.bon_id = b.id
-      LEFT JOIN paiements p ON p.fournisseur_id = f.id AND p.statut = 'effectif'
+      LEFT JOIN (
+        SELECT 
+          COUNT(DISTINCT c.id) as nb_commandes,
+          SUM(b.prix * (100 - ?) / 100) as total_genere
+        FROM bons b
+        JOIN commandes c ON c.bon_id = b.id
+        WHERE b.fournisseur_id = ? AND c.statut = 'utilise'
+      ) revenue_sub ON 1=1
+      LEFT JOIN (
+        SELECT 
+          SUM(montant) as total_paye
+        FROM paiements
+        WHERE fournisseur_id = ? AND statut = 'effectif'
+      ) payment_sub ON 1=1
       WHERE f.id = ?
-    `, [adminPercentage, fournisseurId]);
+    `, [adminPercentage, fournisseurId, fournisseurId, fournisseurId]);
     
     conn.release();
     
@@ -1305,19 +1315,26 @@ app.get('/api/fournisseurs/bilan', requireFournisseur, async (req, res) => {
     
     const [bilan] = await conn.query(`
       SELECT 
-        COUNT(DISTINCT c.id) as nb_commandes_utilisees,
-        COALESCE(SUM(
-          CASE WHEN c.statut = 'utilise'
-          THEN b.prix * (100 - ?) / 100
-          ELSE 0 END
-        ), 0) as total_genere,
-        COALESCE(SUM(p.montant), 0) as total_paye
+        COALESCE(revenue_sub.nb_commandes, 0) as nb_commandes_utilisees,
+        COALESCE(revenue_sub.total_genere, 0) as total_genere,
+        COALESCE(payment_sub.total_paye, 0) as total_paye
       FROM fournisseurs f
-      LEFT JOIN bons b ON b.fournisseur_id = f.id
-      LEFT JOIN commandes c ON c.bon_id = b.id
-      LEFT JOIN paiements p ON p.fournisseur_id = f.id AND p.statut = 'effectif'
+      LEFT JOIN (
+        SELECT 
+          COUNT(DISTINCT c.id) as nb_commandes,
+          SUM(b.prix * (100 - ?) / 100) as total_genere
+        FROM bons b
+        JOIN commandes c ON c.bon_id = b.id
+        WHERE b.fournisseur_id = ? AND c.statut = 'utilise'
+      ) revenue_sub ON 1=1
+      LEFT JOIN (
+        SELECT 
+          SUM(montant) as total_paye
+        FROM paiements
+        WHERE fournisseur_id = ? AND statut = 'effectif'
+      ) payment_sub ON 1=1
       WHERE f.id = ?
-    `, [adminPercentage, fournisseurId]);
+    `, [adminPercentage, fournisseurId, fournisseurId, fournisseurId]);
     
     conn.release();
     

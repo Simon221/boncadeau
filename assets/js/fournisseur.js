@@ -359,8 +359,10 @@ async function loadPaiementsFoo() {
     const bilan = bilData.data || bilData;
 
     // Afficher le bilan
+    // bilanGenere = total à recevoir (100% des prix des bons utilisés)
+    // bilanPaye = déjà reçu (somme des paiements confirmés)
+    // bilanDu = à recevoir (bilanGenere - bilanPaye)
     document.getElementById('bilanGenere').textContent = `${fmtNum(bilan.total_genere)} FCFA`;
-    document.getElementById('bilanNbCommandes').textContent = `${bilan.nb_commandes_utilisees} commande${bilan.nb_commandes_utilisees > 1 ? 's' : ''} utilisée${bilan.nb_commandes_utilisees > 1 ? 's' : ''}`;
     document.getElementById('bilanPaye').textContent = `${fmtNum(bilan.total_paye)} FCFA`;
     document.getElementById('bilanDu').textContent = `${fmtNum(bilan.solde_du)} FCFA`;
 
@@ -372,18 +374,18 @@ async function loadPaiementsFoo() {
     // Afficher l'historique
     const tbody = document.getElementById('paiementsTbody');
     if (!paiements.length) {
-      tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;text-align:center;color:#999;">Aucun paiement reçu pour l'instant.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;text-align:center;color:#999;font-size:.9rem;">Aucun paiement reçu pour l'instant.</td></tr>`;
     } else {
       tbody.innerHTML = paiements.map(p => {
         const statutColor = p.statut === 'effectif' ? '#16a34a' : '#f59e0b';
         const statutLabel = p.statut === 'effectif' ? '✓ Effectif' : '⏳ En attente';
         return `
         <tr>
-          <td>${fmtDate(p.date_paiement)}</td>
-          <td><strong style="color:#16a34a;font-size:1.05rem;">${fmtNum(p.montant)} FCFA</strong></td>
-          <td><span style="display:inline-block;padding:4px 10px;background:${statutColor}22;color:${statutColor};border-radius:4px;font-weight:600;font-size:.85rem;">${statutLabel}</span></td>
-          <td>${p.reference ? `<code style="background:#f0f9ff;color:#0284c7;padding:3px 8px;border-radius:4px;font-size:.85rem;">${escHtml(p.reference)}</code>` : '—'}</td>
-          <td>${p.notes ? `<span style="color:#666;font-size:.9rem;">${escHtml(p.notes)}</span>` : '—'}</td>
+          <td style="font-size:.9rem;">${fmtDate(p.date_paiement)}</td>
+          <td style="text-align:right;font-weight:700;color:#059669;">${fmtNum(p.montant)} FCFA</td>
+          <td><span style="display:inline-block;padding:3px 8px;background:${statutColor}22;color:${statutColor};border-radius:4px;font-weight:600;font-size:.8rem;">${statutLabel}</span></td>
+          <td>${p.reference ? `<code style="background:#f0f9ff;color:#0284c7;padding:2px 6px;border-radius:3px;font-size:.8rem;">${escHtml(p.reference)}</code>` : '—'}</td>
+          <td style="font-size:.85rem;color:#666;">${p.notes ? escHtml(p.notes) : '—'}</td>
         </tr>`;
       }).join('');
     }

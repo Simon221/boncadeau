@@ -502,26 +502,61 @@ async function loadPaiements() {
   const data = await res.json();
   const fournisseurs = data.data || [];
 
+  // Calculer les totaux globaux
+  let totalRevenueAdmin = 0;
+  let totalPaidAll = 0;
+  let totalDueAll = 0;
+
   const tbody = document.getElementById('paiementsTbody');
   if (!fournisseurs.length) {
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="5">Aucun fournisseur avec des bons utilisés.</td></tr>`;
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Aucun fournisseur avec des bons utilisés.</td></tr>`;
+    document.getElementById('totalRevenueAdmin').textContent = '0 FCFA';
+    document.getElementById('totalPaidAll').textContent = '0 FCFA';
+    document.getElementById('totalDueAll').textContent = '0 FCFA';
     return;
   }
 
-  tbody.innerHTML = fournisseurs.map(f => `
+  tbody.innerHTML = fournisseurs.map(f => {
+    // Revenue du fournisseur = 100% du prix du bon (quand utilisé)
+    const revenueF = parseFloat(f.total_genere) || 0;
+    
+    // Commission admin = total_genere est déjà 90% (après déduction de 10% admin)
+    // Donc commission admin = revenueF * 10 / 90 (pour récupérer les 10%)
+    const commissionAdmin = (revenueF * 10) / 90;
+    
+    // Total réel généré = revenueF + commissionAdmin
+    const totalGenere = revenueF + commissionAdmin;
+    
+    // Montant payé
+    const paid = parseFloat(f.total_paye) || 0;
+    
+    // Solde dû = ce que le fournisseur doit recevoir - ce qu'il a reçu
+    const due = revenueF - paid;
+    
+    totalRevenueAdmin += commissionAdmin;
+    totalPaidAll += paid;
+    totalDueAll += due;
+
+    const dueColor = due > 0 ? '#dc2626' : '#16a34a';
+    const dueStyle = due > 0 ? 'font-weight:700;color:' + dueColor : 'color:' + dueColor;
+
+    return `
     <tr>
       <td>
         <strong>${escHtml(f.nom)}</strong><br/>
         <small style="color:#999">${escHtml(f.email)}</small>
       </td>
-      <td class="text-right" style="text-align:right">
-        <span style="color:#16a34a;font-weight:700">${fmtNum(f.total_genere)} FCFA</span>
+      <td style="text-align:right;">
+        <span style="color:#059669;font-weight:700">${fmtNum(revenueF)} FCFA</span>
       </td>
-      <td class="text-right" style="text-align:right">
-        <span style="color:#2563eb;font-weight:700">${fmtNum(f.total_paye)} FCFA</span>
+      <td style="text-align:right;">
+        <span style="color:#d97706;font-weight:700">${fmtNum(commissionAdmin)} FCFA</span>
       </td>
-      <td class="text-right" style="text-align:right">
-        <span style="color:#dc2626;font-weight:700;font-size:1.05rem">${fmtNum(f.solde_du)} FCFA</span>
+      <td style="text-align:right;">
+        <span style="color:#2563eb;font-weight:700">${fmtNum(paid)} FCFA</span>
+      </td>
+      <td style="text-align:right;">
+        <span style="${dueStyle}">${fmtNum(due)} FCFA</span>
       </td>
       <td>
         <div class="actions-cell">
@@ -530,7 +565,13 @@ async function loadPaiements() {
           </button>
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
+
+  // Mettre à jour les totaux globaux
+  document.getElementById('totalRevenueAdmin').textContent = fmtNum(totalRevenueAdmin) + ' FCFA';
+  document.getElementById('totalPaidAll').textContent = fmtNum(totalPaidAll) + ' FCFA';
+  document.getElementById('totalDueAll').textContent = fmtNum(totalDueAll) + ' FCFA';
 }
 
 async function openPaiementDetail(fournisseurId, fournisseurNom) {
@@ -545,43 +586,75 @@ async function openPaiementDetail(fournisseurId, fournisseurNom) {
     const paiData = await paiRes.json();
     const paiements = paiData.data || [];
 
-    // Afficher le bilan
-    document.getElementById('detailGeneré').textContent = `${fmtNum(bilan.total_genere)} FCFA`;
-    document.getElementById('detailPayé').textContent = `${fmtNum(bilan.total_paye)} FCFA`;
-    document.getElementById('detailDû').textContent = `${fmtNum(bilan.solde_du)} FCFA`;
+    // Calculer les valeurs
+    const revenueF = parseFloat(bilan.total_genere) || 0;
+    const commissionAdmin = (revenueF * 10) / 90;
+    const paid = parseFloat(bilan.total_paye) || 0;
+    const due = revenueF - paid;
+
+    // Mettre à jour le titre du modal (avec vérification)
+    const titleEl = document.getElementById('modalPaiementTitle');
+    if (titleEl) titleEl.textContent = fournisseurNom;
+
+    // Afficher le bilan (avec vérification)
+    const revEl = document.getElementById('detailRevenueFournisseur');
+    if (revEl) revEl.textContent = `${fmtNum(revenueF)} FCFA`;
+    
+    const commEl = document.getElementById('detailCommissionAdmin');
+    if (commEl) commEl.textContent = `${fmtNum(commissionAdmin)} FCFA`;
+    
+    const paidEl = document.getElementById('detailPayé');
+    if (paidEl) paidEl.textContent = `${fmtNum(paid)} FCFA`;
+    
+    const dueEl = document.getElementById('detailDû');
+    if (dueEl) dueEl.textContent = `${fmtNum(due)} FCFA`;
 
     // Afficher l'historique
     const tbody = document.getElementById('paiementsHistoriqueTbody');
-    if (!paiements.length) {
-      tbody.innerHTML = `<tr><td colspan="5" style="padding:16px;text-align:center;color:#999;">Aucun paiement enregistré</td></tr>`;
-    } else {
-      tbody.innerHTML = paiements.map(p => {
-        const statutColor = p.statut === 'effectif' ? '#16a34a' : '#f59e0b';
-        const statutLabel = p.statut === 'effectif' ? '✓ Effectif' : '⏳ En attente';
-        const confirmBtn = p.statut === 'en_attente' 
-          ? `<button class="btn btn-sm btn-primary" style="padding:5px 12px;" onclick="confirmerPaiement(${p.id}, this)"><i class="fas fa-check"></i> Confirmer</button>`
-          : '';
-        return `
-        <tr style="border-bottom:1px solid #e2e8f0;">
-          <td style="padding:12px;">${fmtDate(p.date_paiement)}</td>
-          <td style="padding:12px;"><strong>${fmtNum(p.montant)} FCFA</strong></td>
-          <td style="padding:12px;">${p.reference ? `<code>${escHtml(p.reference)}</code>` : '—'}</td>
-          <td style="padding:12px;font-size:.85rem;"><span style="display:inline-block;padding:4px 10px;background:${statutColor}22;color:${statutColor};border-radius:4px;font-weight:600;">${statutLabel}</span></td>
-          <td style="padding:12px;font-size:.85rem;color:#666;">${p.notes ? escHtml(p.notes) : '—'} ${confirmBtn}</td>
-        </tr>`;
-      }).join('');
+    if (tbody) {
+      if (!paiements.length) {
+        tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;text-align:center;color:#999;font-size:.9rem;">Aucun paiement enregistré</td></tr>`;
+      } else {
+        tbody.innerHTML = paiements.map(p => {
+          const statutColor = p.statut === 'effectif' ? '#16a34a' : '#f59e0b';
+          const statutLabel = p.statut === 'effectif' ? '✓ Effectif' : '⏳ En attente';
+          const confirmBtn = p.statut === 'en_attente' 
+            ? `<button class="btn btn-xs" style="padding:4px 8px;font-size:.75rem;background:#2563eb;color:#fff;border:none;border-radius:4px;cursor:pointer;" onclick="confirmerPaiement(${p.id}, this)"><i class="fas fa-check"></i> Confirmer</button>`
+            : '';
+          return `
+          <tr style="border-bottom:1px solid #f0f0f0;">
+            <td style="padding:10px 12px;font-size:.9rem;">${fmtDate(p.date_paiement)}</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:700;color:#059669;">${fmtNum(p.montant)} FCFA</td>
+            <td style="padding:10px 12px;font-size:.85rem;">${p.reference ? `<code style="background:#f0f9ff;color:#0284c7;padding:2px 6px;border-radius:3px;">${escHtml(p.reference)}</code>` : '—'}</td>
+            <td style="padding:10px 12px;text-align:center;"><span style="display:inline-block;padding:3px 8px;background:${statutColor}22;color:${statutColor};border-radius:3px;font-weight:600;font-size:.8rem;">${statutLabel}</span></td>
+            <td style="padding:10px 12px;font-size:.85rem;color:#666;">${p.notes ? escHtml(p.notes) : '—'} ${confirmBtn}</td>
+          </tr>`;
+        }).join('');
+      }
     }
 
-    // Préparer le modal
-    document.getElementById('paiementFournisseurId').value = fournisseurId;
-    document.getElementById('paiementMontant').value = '';
-    document.getElementById('paiementDate').valueAsDate = new Date();
-    document.getElementById('paiementRef').value = '';
-    document.getElementById('paiementNotes').value = '';
+    // Préparer le modal (avec vérification)
+    const fournisseurIdInput = document.getElementById('paiementFournisseurId');
+    if (fournisseurIdInput) fournisseurIdInput.value = fournisseurId;
+    
+    const nameSpan = document.getElementById('modalPaymentFournisseurName');
+    if (nameSpan) nameSpan.textContent = fournisseurNom;
+    
+    const montantInput = document.getElementById('paiementMontant');
+    if (montantInput) montantInput.value = '';
+    
+    const dateInput = document.getElementById('paiementDate');
+    if (dateInput) dateInput.valueAsDate = new Date();
+    
+    const refInput = document.getElementById('paiementRef');
+    if (refInput) refInput.value = '';
+    
+    const notesInput = document.getElementById('paiementNotes');
+    if (notesInput) notesInput.value = '';
 
     openModal('modalPaiementDetail');
   } catch (error) {
-    console.error('Erreur:', error);
+    console.error('Erreur dans openPaiementDetail:', error);
     showToast('Erreur lors du chargement des détails.', 'error');
   }
 }
@@ -602,8 +675,17 @@ async function confirmerPaiement(paiementId, btnElement) {
       const bilanRes = await apiFetch(`/api/admin/fournisseurs/${fournisseurId}/bilan`);
       const bilData = await bilanRes.json();
       const bilan = bilData.data || bilData;
-      document.getElementById('detailPayé').textContent = `${fmtNum(bilan.total_paye)} FCFA`;
-      document.getElementById('detailDû').textContent = `${fmtNum(bilan.solde_du)} FCFA`;
+      
+      // Recalculer les valeurs
+      const revenueF = parseFloat(bilan.total_genere) || 0;
+      const commissionAdmin = (revenueF * 10) / 90;
+      const paid = parseFloat(bilan.total_paye) || 0;
+      const due = revenueF - paid;
+      
+      document.getElementById('detailRevenueFournisseur').textContent = `${fmtNum(revenueF)} FCFA`;
+      document.getElementById('detailCommissionAdmin').textContent = `${fmtNum(commissionAdmin)} FCFA`;
+      document.getElementById('detailPayé').textContent = `${fmtNum(paid)} FCFA`;
+      document.getElementById('detailDû').textContent = `${fmtNum(due)} FCFA`;
       
       // Recharger paiements
       const paiRes = await apiFetch(`/api/admin/fournisseurs/${fournisseurId}/paiements`);
@@ -615,17 +697,20 @@ async function confirmerPaiement(paiementId, btnElement) {
         const statutColor = p.statut === 'effectif' ? '#16a34a' : '#f59e0b';
         const statutLabel = p.statut === 'effectif' ? '✓ Effectif' : '⏳ En attente';
         const confirmBtn = p.statut === 'en_attente' 
-          ? `<button class="btn btn-sm btn-primary" style="padding:5px 12px;" onclick="confirmerPaiement(${p.id}, this)"><i class="fas fa-check"></i> Confirmer</button>`
+          ? `<button class="btn btn-xs" style="padding:4px 8px;font-size:.75rem;background:#2563eb;color:#fff;border:none;border-radius:4px;cursor:pointer;" onclick="confirmerPaiement(${p.id}, this)"><i class="fas fa-check"></i> Confirmer</button>`
           : '';
         return `
-        <tr style="border-bottom:1px solid #e2e8f0;">
-          <td style="padding:12px;">${fmtDate(p.date_paiement)}</td>
-          <td style="padding:12px;"><strong>${fmtNum(p.montant)} FCFA</strong></td>
-          <td style="padding:12px;">${p.reference ? `<code>${escHtml(p.reference)}</code>` : '—'}</td>
-          <td style="padding:12px;font-size:.85rem;"><span style="display:inline-block;padding:4px 10px;background:${statutColor}22;color:${statutColor};border-radius:4px;font-weight:600;">${statutLabel}</span></td>
-          <td style="padding:12px;font-size:.85rem;color:#666;">${p.notes ? escHtml(p.notes) : '—'} ${confirmBtn}</td>
+        <tr style="border-bottom:1px solid #f0f0f0;">
+          <td style="padding:10px 12px;font-size:.9rem;">${fmtDate(p.date_paiement)}</td>
+          <td style="padding:10px 12px;text-align:right;font-weight:700;color:#059669;">${fmtNum(p.montant)} FCFA</td>
+          <td style="padding:10px 12px;font-size:.85rem;">${p.reference ? `<code style="background:#f0f9ff;color:#0284c7;padding:2px 6px;border-radius:3px;">${escHtml(p.reference)}</code>` : '—'}</td>
+          <td style="padding:10px 12px;text-align:center;"><span style="display:inline-block;padding:3px 8px;background:${statutColor}22;color:${statutColor};border-radius:3px;font-weight:600;font-size:.8rem;">${statutLabel}</span></td>
+          <td style="padding:10px 12px;font-size:.85rem;color:#666;">${p.notes ? escHtml(p.notes) : '—'} ${confirmBtn}</td>
         </tr>`;
       }).join('');
+      
+      // Recharger aussi le tableau principal
+      loadPaiements();
     } else {
       showToast('Erreur lors de la confirmation.', 'error');
       btnElement.disabled = false;
@@ -659,8 +744,8 @@ document.getElementById('btnSavePaiement').addEventListener('click', async () =>
   if (res.ok) {
     showToast('Paiement enregistré avec succès.');
     closeModal('modalNouveauPaiement');
-    // Recharger le detail
-    const fName = escHtml(fournisseurNom);
+    // Recharger le detail avec le nom depuis le DOM
+    const fName = document.getElementById('modalPaymentFournisseurName').textContent;
     openPaiementDetail(fournisseurId, fName);
     loadPaiements();
   } else {

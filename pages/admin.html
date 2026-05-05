@@ -204,16 +204,53 @@
 
     <!-- ══════════════════════ PAIEMENTS FOURNISSEURS ════ -->
     <section id="sectionPaiements" class="section">
+      <!-- Résumé global -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:24px;">
+        <div class="stat-card">
+          <div class="stat-card__icon" style="background:linear-gradient(135deg,#d97706,#f59e0b)">
+            <i class="fas fa-wallet"></i>
+          </div>
+          <div class="stat-card__body">
+            <div class="stat-card__num" id="totalRevenueAdmin">—</div>
+            <div class="stat-card__label">Revenue Admin (10%)</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__icon" style="background:linear-gradient(135deg,#06b6d4,#0891b2)">
+            <i class="fas fa-money-bill"></i>
+          </div>
+          <div class="stat-card__body">
+            <div class="stat-card__num" id="totalPaidAll">—</div>
+            <div class="stat-card__label">Payé aux fournisseurs</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__icon" style="background:linear-gradient(135deg,#ef4444,#dc2626)">
+            <i class="fas fa-hourglass-end"></i>
+          </div>
+          <div class="stat-card__body">
+            <div class="stat-card__num" id="totalDueAll">—</div>
+            <div class="stat-card__label">À payer aux fournisseurs</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tableau des fournisseurs -->
       <div class="card">
         <div class="card__header">
-          <h2 class="card__title"><i class="fas fa-credit-card"></i> Fournisseurs et Paiements</h2>
-          <p style="font-size:.85rem;color:#64748b;margin-top:4px;">Gérez les paiements dus aux fournisseurs selon les bons utilisés</p>
+          <h2 class="card__title"><i class="fas fa-store"></i> Bilan par Fournisseur</h2>
+          <p style="font-size:.85rem;color:#64748b;margin-top:4px;">Revenue généré | Commission gardée | Montant payé | Solde dû</p>
         </div>
         <div class="table-wrap">
           <table class="data-table" id="paiementsTable">
             <thead>
               <tr>
-                <th>Fournisseur</th><th>Généré (FCFA)</th><th>Déjà payé</th><th>Solde dû</th><th>Actions</th>
+                <th>Fournisseur</th>
+                <th style="text-align:right">Revenue Fournisseur</th>
+                <th style="text-align:right">Commission Admin (10%)</th>
+                <th style="text-align:right">Payé</th>
+                <th style="text-align:right">Dû</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody id="paiementsTbody"></tbody>
@@ -415,54 +452,71 @@
 
   <!-- ══════════════════════ MODAL PAIEMENT DETAIL ═════ -->
   <div class="modal-overlay" id="modalPaiementDetail">
-    <div class="modal" style="max-width:680px">
+    <div class="modal" style="max-width:720px">
       <div class="modal__header">
-        <h2>Détail Fournisseur & Paiements</h2>
+        <h2 id="modalPaiementTitle">Détail Fournisseur</h2>
         <button class="modal__close" onclick="closeModal('modalPaiementDetail')"><i class="fas fa-xmark"></i></button>
       </div>
       <div class="modal__body">
-        <!-- Bilan du fournisseur -->
-        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin-bottom:24px;">
-          <h3 style="margin:0 0 12px;font-size:.95rem;color:#1e293b;"><i class="fas fa-chart-bar" style="margin-right:8px;color:#16a34a;"></i>Bilan financier</h3>
+        
+        <!-- Bilan financier -->
+        <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin-bottom:24px;">
+          <h3 style="margin:0 0 16px;font-size:.95rem;color:#1e293b;font-weight:700;">
+            <i class="fas fa-chart-bar" style="margin-right:8px;color:#0d9488;"></i> Bilan Financier
+          </h3>
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-            <div style="background:#fff;padding:12px;border-radius:6px;border-left:3px solid #16a34a;">
-              <div style="font-size:.75rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Généré</div>
-              <div style="font-size:1.25rem;font-weight:700;color:#16a34a;" id="detailGeneré">0 FCFA</div>
+            <!-- Revenue du fournisseur -->
+            <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:8px;padding:14px;">
+              <div style="font-size:.7rem;color:#047857;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;font-weight:700;">Revenue Fournisseur (100%)</div>
+              <div style="font-size:1.4rem;font-weight:700;color:#059669;" id="detailRevenueFournisseur">0 FCFA</div>
+              <small style="color:#6ee7b7;font-size:.75rem;">à recevoir</small>
             </div>
-            <div style="background:#fff;padding:12px;border-radius:6px;border-left:3px solid #2563eb;">
-              <div style="font-size:.75rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Payé</div>
-              <div style="font-size:1.25rem;font-weight:700;color:#2563eb;" id="detailPayé">0 FCFA</div>
+            <!-- Commission admin -->
+            <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:14px;">
+              <div style="font-size:.7rem;color:#b45309;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;font-weight:700;">Commission Admin (10%)</div>
+              <div style="font-size:1.4rem;font-weight:700;color:#d97706;" id="detailCommissionAdmin">0 FCFA</div>
+              <small style="color:#fbbf24;font-size:.75rem;">revenue admin</small>
             </div>
-            <div style="background:#fff;padding:12px;border-radius:6px;border-left:3px solid #dc2626;">
-              <div style="font-size:.75rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Dû</div>
-              <div style="font-size:1.25rem;font-weight:700;color:#dc2626;" id="detailDû">0 FCFA</div>
+            <!-- Montant payé -->
+            <div style="background:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:14px;">
+              <div style="font-size:.7rem;color:#1e40af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;font-weight:700;">Montant Payé</div>
+              <div style="font-size:1.4rem;font-weight:700;color:#2563eb;" id="detailPayé">0 FCFA</div>
+              <small style="color:#60a5fa;font-size:.75rem;">au fournisseur</small>
             </div>
+          </div>
+          <!-- Solde dû -->
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;">
+            <span style="color:#64748b;font-size:.9rem;font-weight:600;">Solde dû au fournisseur :</span>
+            <span style="font-size:1.3rem;font-weight:700;color:#dc2626;" id="detailDû">0 FCFA</span>
           </div>
         </div>
 
         <!-- Historique paiements -->
         <div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <h3 style="margin:0;font-size:.95rem;color:#1e293b;"><i class="fas fa-history" style="margin-right:8px;color:#7c3aed;"></i>Historique des paiements</h3>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <h3 style="margin:0;font-size:.95rem;color:#1e293b;font-weight:700;">
+              <i class="fas fa-history" style="margin-right:8px;color:#7c3aed;"></i> Historique des Paiements
+            </h3>
             <button class="btn btn-sm btn-primary" onclick="openModal('modalNouveauPaiement')">
-              <i class="fas fa-plus"></i> Nouveau paiement
+              <i class="fas fa-plus"></i> Enregistrer un paiement
             </button>
           </div>
           <div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;" id="paiementsHistoriqueContainer">
-            <table style="width:100%;font-size:.9rem;">
-              <thead style="background:#f8fafc;">
+            <table style="width:100%;font-size:.85rem;">
+              <thead style="background:#f8fafc;border-bottom:1px solid #e2e8f0;">
                 <tr>
-                  <th style="padding:12px;text-align:left;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Date</th>
-                  <th style="padding:12px;text-align:left;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Montant</th>
-                  <th style="padding:12px;text-align:left;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Référence</th>
-                  <th style="padding:12px;text-align:left;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Statut</th>
-                  <th style="padding:12px;text-align:left;color:#64748b;font-weight:600;border-bottom:1px solid #e2e8f0;">Notes</th>
+                  <th style="padding:10px 12px;text-align:left;color:#64748b;font-weight:700;">Date</th>
+                  <th style="padding:10px 12px;text-align:right;color:#64748b;font-weight:700;">Montant</th>
+                  <th style="padding:10px 12px;text-align:left;color:#64748b;font-weight:700;">Référence</th>
+                  <th style="padding:10px 12px;text-align:center;color:#64748b;font-weight:700;">Statut</th>
+                  <th style="padding:10px 12px;text-align:left;color:#64748b;font-weight:700;">Notes</th>
                 </tr>
               </thead>
               <tbody id="paiementsHistoriqueTbody"></tbody>
             </table>
           </div>
         </div>
+
       </div>
       <div class="modal__footer">
         <button class="btn btn-ghost" onclick="closeModal('modalPaiementDetail')">Fermer</button>
@@ -474,7 +528,7 @@
   <div class="modal-overlay" id="modalNouveauPaiement">
     <div class="modal" style="max-width:480px">
       <div class="modal__header">
-        <h2>Déclarer un paiement</h2>
+        <h2><i class="fas fa-plus"></i> Enregistrer un paiement pour <span id="modalPaymentFournisseurName">...</span></h2>
         <button class="modal__close" onclick="closeModal('modalNouveauPaiement')"><i class="fas fa-xmark"></i></button>
       </div>
       <div class="modal__body">
@@ -482,7 +536,7 @@
           <input type="hidden" id="paiementFournisseurId" />
           <div class="form-grid">
             <div class="form-group col-2">
-              <label>Montant (FCFA) *</label>
+              <label>Montant payé (FCFA) *</label>
               <input type="number" id="paiementMontant" required min="0" step="0.01" placeholder="75000" />
             </div>
             <div class="form-group col-2">
@@ -490,14 +544,22 @@
               <input type="date" id="paiementDate" required />
             </div>
             <div class="form-group col-2">
-              <label>Référence <small>(virement, chèque, etc)</small></label>
+              <label>Référence <small>(virement, chèque, virement bancaire)</small></label>
               <input type="text" id="paiementRef" placeholder="VIR-20260504-001" />
             </div>
             <div class="form-group col-2">
-              <label>Notes</label>
-              <textarea id="paiementNotes" rows="2" placeholder="Virement bancaire, chèque, etc…"></textarea>
+              <label>Notes / Commentaires</label>
+              <textarea id="paiementNotes" rows="2" placeholder="Détails supplémentaires, le cas échéant…"></textarea>
             </div>
           </div>
+        </form>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn-ghost" onclick="closeModal('modalNouveauPaiement')">Annuler</button>
+        <button class="btn btn-primary" id="btnSavePaiement"><i class="fas fa-floppy-disk"></i> Enregistrer</button>
+      </div>
+    </div>
+  </div>
         </form>
       </div>
       <div class="modal__footer">

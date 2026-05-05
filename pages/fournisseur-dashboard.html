@@ -342,25 +342,25 @@
       <div class="card">
         <div class="card__header">
           <h2 class="card__title"><i class="fas fa-credit-card"></i> Mes Paiements</h2>
-          <p style="font-size:.85rem;color:#64748b;margin-top:4px;">Suivi des paiements reçus et du solde dû</p>
+          <p style="font-size:.85rem;color:#64748b;margin-top:4px;">Suivi des paiements reçus et solde à recevoir</p>
         </div>
 
         <!-- Bilan financier -->
         <div style="background:linear-gradient(135deg, #f0fdfa, #ccfbf1);border:1px solid #99f6e4;border-radius:12px;padding:24px;margin-bottom:28px;display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:20px;">
           <div style="text-align:center;border-right:1px solid rgba(13,148,136,.15);padding-right:20px;">
-            <div style="font-size:.75rem;color:#0d9488;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-weight:700;">Généré</div>
+            <div style="font-size:.75rem;color:#0d9488;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-weight:700;">Total à recevoir</div>
             <div style="font-size:2rem;font-weight:700;color:#0d9488;" id="bilanGenere">0 FCFA</div>
-            <div style="font-size:.8rem;color:#64748b;margin-top:6px;" id="bilanNbCommandes">0 commandes utilisées</div>
+            <div style="font-size:.8rem;color:#64748b;margin-top:6px;">Bons utilisés (100%)</div>
           </div>
           <div style="text-align:center;border-right:1px solid rgba(13,148,136,.15);padding-right:20px;">
-            <div style="font-size:.75rem;color:#2563eb;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-weight:700;">Payé</div>
+            <div style="font-size:.75rem;color:#2563eb;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-weight:700;">Déjà reçu</div>
             <div style="font-size:2rem;font-weight:700;color:#2563eb;" id="bilanPaye">0 FCFA</div>
-            <div style="font-size:.8rem;color:#64748b;margin-top:6px;">Total reçu</div>
+            <div style="font-size:.8rem;color:#64748b;margin-top:6px;">Paiements confirmés</div>
           </div>
           <div style="text-align:center;padding-right:20px;">
-            <div style="font-size:.75rem;color:#dc2626;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-weight:700;">Dû</div>
+            <div style="font-size:.75rem;color:#dc2626;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;font-weight:700;">À recevoir</div>
             <div style="font-size:2rem;font-weight:700;color:#dc2626;" id="bilanDu">0 FCFA</div>
-            <div style="font-size:.8rem;color:#64748b;margin-top:6px;">Solde à recevoir</div>
+            <div style="font-size:.8rem;color:#64748b;margin-top:6px;">Solde restant</div>
           </div>
         </div>
 
@@ -374,7 +374,7 @@
             <thead>
               <tr>
                 <th>Date du paiement</th>
-                <th>Montant (FCFA)</th>
+                <th style="text-align:right;">Montant (FCFA)</th>
                 <th>Statut</th>
                 <th>Référence</th>
                 <th>Notes</th>
