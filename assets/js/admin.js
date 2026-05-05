@@ -558,13 +558,16 @@ async function openPaiementDetail(fournisseurId, fournisseurNom) {
       tbody.innerHTML = paiements.map(p => {
         const statutColor = p.statut === 'effectif' ? '#16a34a' : '#f59e0b';
         const statutLabel = p.statut === 'effectif' ? '✓ Effectif' : '⏳ En attente';
+        const confirmBtn = p.statut === 'en_attente' 
+          ? `<button class="btn btn-sm btn-primary" style="padding:5px 12px;" onclick="confirmerPaiement(${p.id}, this)"><i class="fas fa-check"></i> Confirmer</button>`
+          : '';
         return `
         <tr style="border-bottom:1px solid #e2e8f0;">
           <td style="padding:12px;">${fmtDate(p.date_paiement)}</td>
           <td style="padding:12px;"><strong>${fmtNum(p.montant)} FCFA</strong></td>
           <td style="padding:12px;">${p.reference ? `<code>${escHtml(p.reference)}</code>` : '—'}</td>
           <td style="padding:12px;font-size:.85rem;"><span style="display:inline-block;padding:4px 10px;background:${statutColor}22;color:${statutColor};border-radius:4px;font-weight:600;">${statutLabel}</span></td>
-          <td style="padding:12px;font-size:.85rem;color:#666;">${p.notes ? escHtml(p.notes) : '—'}</td>
+          <td style="padding:12px;font-size:.85rem;color:#666;">${p.notes ? escHtml(p.notes) : '—'} ${confirmBtn}</td>
         </tr>`;
       }).join('');
     }
@@ -580,6 +583,59 @@ async function openPaiementDetail(fournisseurId, fournisseurNom) {
   } catch (error) {
     console.error('Erreur:', error);
     showToast('Erreur lors du chargement des détails.', 'error');
+  }
+}
+
+async function confirmerPaiement(paiementId, btnElement) {
+  try {
+    btnElement.disabled = true;
+    btnElement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Confirmation...';
+    
+    const res = await apiFetch(`/api/admin/paiements/${paiementId}/confirmer`, {
+      method: 'PATCH'
+    });
+    
+    if (res.ok) {
+      showToast('Paiement confirmé avec succès !', 'success');
+      // Recharger l'historique
+      const fournisseurId = parseInt(document.getElementById('paiementFournisseurId').value);
+      const bilanRes = await apiFetch(`/api/admin/fournisseurs/${fournisseurId}/bilan`);
+      const bilData = await bilanRes.json();
+      const bilan = bilData.data || bilData;
+      document.getElementById('detailPayé').textContent = `${fmtNum(bilan.total_paye)} FCFA`;
+      document.getElementById('detailDû').textContent = `${fmtNum(bilan.solde_du)} FCFA`;
+      
+      // Recharger paiements
+      const paiRes = await apiFetch(`/api/admin/fournisseurs/${fournisseurId}/paiements`);
+      const paiData = await paiRes.json();
+      const paiements = paiData.data || [];
+      
+      const tbody = document.getElementById('paiementsHistoriqueTbody');
+      tbody.innerHTML = paiements.map(p => {
+        const statutColor = p.statut === 'effectif' ? '#16a34a' : '#f59e0b';
+        const statutLabel = p.statut === 'effectif' ? '✓ Effectif' : '⏳ En attente';
+        const confirmBtn = p.statut === 'en_attente' 
+          ? `<button class="btn btn-sm btn-primary" style="padding:5px 12px;" onclick="confirmerPaiement(${p.id}, this)"><i class="fas fa-check"></i> Confirmer</button>`
+          : '';
+        return `
+        <tr style="border-bottom:1px solid #e2e8f0;">
+          <td style="padding:12px;">${fmtDate(p.date_paiement)}</td>
+          <td style="padding:12px;"><strong>${fmtNum(p.montant)} FCFA</strong></td>
+          <td style="padding:12px;">${p.reference ? `<code>${escHtml(p.reference)}</code>` : '—'}</td>
+          <td style="padding:12px;font-size:.85rem;"><span style="display:inline-block;padding:4px 10px;background:${statutColor}22;color:${statutColor};border-radius:4px;font-weight:600;">${statutLabel}</span></td>
+          <td style="padding:12px;font-size:.85rem;color:#666;">${p.notes ? escHtml(p.notes) : '—'} ${confirmBtn}</td>
+        </tr>`;
+      }).join('');
+    } else {
+      showToast('Erreur lors de la confirmation.', 'error');
+      btnElement.disabled = false;
+      btnElement.innerHTML = '<i class="fas fa-check"></i> Confirmer';
+    }
+  } catch (error) {
+    console.error('Erreur:', error);
+    showToast('Erreur lors de la confirmation.', 'error');
+    btnElement.disabled = false;
+    btnElement.innerHTML = '<i class="fas fa-check"></i> Confirmer';
   }
 }
 

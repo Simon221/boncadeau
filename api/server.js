@@ -1280,7 +1280,7 @@ app.post('/api/admin/paiements', requireAdmin, async (req, res) => {
     
     await conn.query(`
       INSERT INTO paiements (fournisseur_id, montant, date_paiement, reference, notes, statut)
-      VALUES (?, ?, ?, ?, ?, 'effectif')
+      VALUES (?, ?, ?, ?, ?, 'en_attente')
     `, [fournisseur_id, montant, date_paiement, reference || null, notes || null]);
     
     conn.release();
@@ -1327,6 +1327,25 @@ app.get('/api/fournisseurs/bilan', requireFournisseur, async (req, res) => {
     res.json({ success: true, data: result });
   } catch (error) {
     console.error('❌ Erreur GET /api/fournisseurs/bilan:', error);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+});
+
+// PATCH Admin : Confirmer un paiement (en_attente -> effectif)
+app.patch('/api/admin/paiements/:id/confirmer', requireAdmin, async (req, res) => {
+  try {
+    const paiementId = parseInt(req.params.id);
+    const conn = await pool.getConnection();
+    
+    await conn.query(
+      'UPDATE paiements SET statut = ? WHERE id = ?',
+      ['effectif', paiementId]
+    );
+    
+    conn.release();
+    res.json({ success: true, message: 'Paiement confirmé' });
+  } catch (error) {
+    console.error('❌ Erreur PATCH /api/admin/paiements/:id/confirmer:', error);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
