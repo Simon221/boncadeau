@@ -136,6 +136,7 @@ CREATE TABLE IF NOT EXISTS paiements (
   date_paiement     DATE NOT NULL,
   reference         VARCHAR(50),
   notes             TEXT,
+  statut            ENUM('en_attente','effectif') DEFAULT 'effectif',
   created_at        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (fournisseur_id) REFERENCES fournisseurs(id) ON DELETE RESTRICT
 );

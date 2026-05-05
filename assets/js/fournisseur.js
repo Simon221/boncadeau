@@ -372,15 +372,20 @@ async function loadPaiementsFoo() {
     // Afficher l'historique
     const tbody = document.getElementById('paiementsTbody');
     if (!paiements.length) {
-      tbody.innerHTML = `<tr><td colspan="4" style="padding:20px;text-align:center;color:#999;">Aucun paiement reçu pour l'instant.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="padding:20px;text-align:center;color:#999;">Aucun paiement reçu pour l'instant.</td></tr>`;
     } else {
-      tbody.innerHTML = paiements.map(p => `
+      tbody.innerHTML = paiements.map(p => {
+        const statutColor = p.statut === 'effectif' ? '#16a34a' : '#f59e0b';
+        const statutLabel = p.statut === 'effectif' ? '✓ Effectif' : '⏳ En attente';
+        return `
         <tr>
           <td>${fmtDate(p.date_paiement)}</td>
           <td><strong style="color:#16a34a;font-size:1.05rem;">${fmtNum(p.montant)} FCFA</strong></td>
+          <td><span style="display:inline-block;padding:4px 10px;background:${statutColor}22;color:${statutColor};border-radius:4px;font-weight:600;font-size:.85rem;">${statutLabel}</span></td>
           <td>${p.reference ? `<code style="background:#f0f9ff;color:#0284c7;padding:3px 8px;border-radius:4px;font-size:.85rem;">${escHtml(p.reference)}</code>` : '—'}</td>
           <td>${p.notes ? `<span style="color:#666;font-size:.9rem;">${escHtml(p.notes)}</span>` : '—'}</td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
     }
   } catch (error) {
     console.error('Erreur:', error);

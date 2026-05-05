@@ -553,15 +553,20 @@ async function openPaiementDetail(fournisseurId, fournisseurNom) {
     // Afficher l'historique
     const tbody = document.getElementById('paiementsHistoriqueTbody');
     if (!paiements.length) {
-      tbody.innerHTML = `<tr><td colspan="4" style="padding:16px;text-align:center;color:#999;">Aucun paiement enregistré</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="5" style="padding:16px;text-align:center;color:#999;">Aucun paiement enregistré</td></tr>`;
     } else {
-      tbody.innerHTML = paiements.map(p => `
+      tbody.innerHTML = paiements.map(p => {
+        const statutColor = p.statut === 'effectif' ? '#16a34a' : '#f59e0b';
+        const statutLabel = p.statut === 'effectif' ? '✓ Effectif' : '⏳ En attente';
+        return `
         <tr style="border-bottom:1px solid #e2e8f0;">
           <td style="padding:12px;">${fmtDate(p.date_paiement)}</td>
           <td style="padding:12px;"><strong>${fmtNum(p.montant)} FCFA</strong></td>
           <td style="padding:12px;">${p.reference ? `<code>${escHtml(p.reference)}</code>` : '—'}</td>
+          <td style="padding:12px;font-size:.85rem;"><span style="display:inline-block;padding:4px 10px;background:${statutColor}22;color:${statutColor};border-radius:4px;font-weight:600;">${statutLabel}</span></td>
           <td style="padding:12px;font-size:.85rem;color:#666;">${p.notes ? escHtml(p.notes) : '—'}</td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
     }
 
     // Préparer le modal

@@ -1186,7 +1186,7 @@ app.get('/api/admin/paiements', requireAdmin, async (req, res) => {
         SELECT id FROM bons WHERE fournisseur_id = f.id
       )
       LEFT JOIN bons b ON b.id = c.bon_id
-      LEFT JOIN paiements p ON p.fournisseur_id = f.id
+      LEFT JOIN paiements p ON p.fournisseur_id = f.id AND p.statut = 'effectif'
       GROUP BY f.id, f.nom, f.email
       ORDER BY solde_du DESC
     `, [adminPercentage, adminPercentage]);
@@ -1212,6 +1212,7 @@ app.get('/api/admin/fournisseurs/:id/paiements', requireAdmin, async (req, res) 
         p.date_paiement,
         p.reference,
         p.notes,
+        p.statut,
         p.created_at
       FROM paiements p
       WHERE p.fournisseur_id = ?
@@ -1250,7 +1251,7 @@ app.get('/api/admin/fournisseurs/:id/bilan', requireAdmin, async (req, res) => {
       FROM fournisseurs f
       LEFT JOIN bons b ON b.fournisseur_id = f.id
       LEFT JOIN commandes c ON c.bon_id = b.id
-      LEFT JOIN paiements p ON p.fournisseur_id = f.id
+      LEFT JOIN paiements p ON p.fournisseur_id = f.id AND p.statut = 'effectif'
       WHERE f.id = ?
     `, [adminPercentage, fournisseurId]);
     
@@ -1261,7 +1262,7 @@ app.get('/api/admin/fournisseurs/:id/bilan', requireAdmin, async (req, res) => {
     
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('❌ Erreur GET /api/admin/fournisseurs/:id/bilan:', error);
+    console.error('❌ Erreur GET /api/fournisseurs/bilan:', error);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 });
@@ -1278,8 +1279,8 @@ app.post('/api/admin/paiements', requireAdmin, async (req, res) => {
     const conn = await pool.getConnection();
     
     await conn.query(`
-      INSERT INTO paiements (fournisseur_id, montant, date_paiement, reference, notes)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO paiements (fournisseur_id, montant, date_paiement, reference, notes, statut)
+      VALUES (?, ?, ?, ?, ?, 'effectif')
     `, [fournisseur_id, montant, date_paiement, reference || null, notes || null]);
     
     conn.release();
@@ -1314,7 +1315,7 @@ app.get('/api/fournisseurs/bilan', requireFournisseur, async (req, res) => {
       FROM fournisseurs f
       LEFT JOIN bons b ON b.fournisseur_id = f.id
       LEFT JOIN commandes c ON c.bon_id = b.id
-      LEFT JOIN paiements p ON p.fournisseur_id = f.id
+      LEFT JOIN paiements p ON p.fournisseur_id = f.id AND p.statut = 'effectif'
       WHERE f.id = ?
     `, [adminPercentage, fournisseurId]);
     
@@ -1343,6 +1344,7 @@ app.get('/api/fournisseurs/paiements', requireFournisseur, async (req, res) => {
         p.date_paiement,
         p.reference,
         p.notes,
+        p.statut,
         p.created_at
       FROM paiements p
       WHERE p.fournisseur_id = ?
